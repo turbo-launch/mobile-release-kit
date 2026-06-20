@@ -1,0 +1,17 @@
+{
+  "description": "Warn (non-blocking) before a git command would commit an EAS build artifact (.aab/.ipa/.apk).",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/guard-build-artifacts.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

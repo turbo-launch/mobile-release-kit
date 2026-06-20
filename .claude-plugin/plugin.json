@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "mobile-release-kit",
+  "displayName": "Mobile Release Kit",
+  "version": "0.1.0",
+  "description": "Ship Expo / React Native apps to the App Store and Google Play: store-screenshot capture (live simulator + web bundle), a deliberate device-frame renderer, and an EAS release runbook with the real gotchas baked in.",
+  "author": {
+    "name": "dashgin",
+    "url": "https://github.com/dashgin"
+  },
+  "homepage": "https://github.com/dashgin/mobile-release-kit",
+  "repository": "https://github.com/dashgin/mobile-release-kit",
+  "license": "MIT",
+  "keywords": [
+    "expo",
+    "react-native",
+    "eas",
+    "app-store",
+    "play-store",
+    "screenshots",
+    "aso",
+    "release",
+    "mobile"
+  ]
+}

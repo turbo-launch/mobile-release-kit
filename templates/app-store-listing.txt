@@ -1,0 +1,46 @@
+APP STORE LISTING — [APP NAME] v[VERSION]
+Fill in every [ ... ]. Replace REPLACE_WITH_* with real, verified values. One file per locale.
+
+NAME (<=30 chars)
+[App Name + 1-2 keywords]
+
+SUBTITLE (<=30 chars)
+[The benefit in a phrase]
+
+PROMOTIONAL TEXT (<=170 chars — editable without a new build)
+[Timely hook / what's new]
+
+KEYWORDS (<=100 chars total, comma-separated, NO spaces after commas, don't repeat the Name)
+[keyword1,keyword2,keyword3]
+
+DESCRIPTION (<=4000 chars — benefit-led, strongest value first)
+[Opening line that earns the tap.]
+
+[Paragraph or bullets elaborating the core benefits.]
+
+CATEGORY
+Primary: [e.g. Education]
+Secondary: [optional]
+
+URLS (must be LIVE at review time)
+Support URL:   https://[your-domain]/support
+Marketing URL: https://[your-domain]/
+Privacy URL:   https://[your-domain]/privacy
+
+----------------------------------------------------------------------
+APP REVIEW INFORMATION (Guideline 2.1 — demo creds MUST work or Apple rejects)
+
+Demo account
+  Login:    REPLACE_WITH_demo_login            (phone/email the reviewer signs in with)
+  Password: REPLACE_WITH_demo_password_or_OTP  (or fixed OTP for a bypass account)
+  [Add a second account here if a different role is needed, e.g. a host/teacher.]
+
+Contact
+  First/Last: [name]
+  Phone:      [phone]
+  Email:      [email]
+
+NOTES (tell the reviewer exactly how to exercise the app)
+- [How to reach any gated content: enter PIN/code X, join Y, etc.]
+- [Permission timing, e.g. "Camera prompt appears only after tapping Scan QR, never at launch."]
+- [Anything non-obvious about the demo flow.]

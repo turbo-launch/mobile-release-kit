@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "dashgin-tools",
+  "description": "Tools for shipping mobile apps — store-screenshot capture, device-frame rendering, and EAS release runbooks.",
+  "owner": {
+    "name": "dashgin"
+  },
+  "plugins": [
+    {
+      "name": "mobile-release-kit",
+      "source": "./",
+      "description": "Expo/RN store-screenshot capture + device-frame renderer + EAS release runbook.",
+      "category": "release",
+      "tags": ["expo", "eas", "app-store", "play-store", "screenshots"]
+    }
+  ]
+}

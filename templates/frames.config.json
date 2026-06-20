@@ -1,0 +1,41 @@
+{
+  "_README": "Config for scripts/frame-screenshots.js. Copy this, edit palette + screens + order for your app, then: node frame-screenshots.js <thisfile> <rawDir> <outDir> <device>. 'order' lists screen keys in store order (frame 1 first — make it your most exciting screen). Each key must have a raw <key>.png in rawDir and an entry in 'screens'. eyebrow = ALL-CAPS feature label; head = benefit headline (use \\n for line breaks). tone picks a background from 'tones' (or the built-in 'hot'/'forest'/'paper'). pop = optional energy chip (big number / rank / %).",
+
+  "fontFamily": "-apple-system,\"SF Pro Display\",\"Helvetica Neue\",Arial,sans-serif",
+  "headlineAlign": "center",
+  "tilt": false,
+  "watermark": "",
+  "defaultTone": "forest",
+
+  "palette": {
+    "ground": "#15392E",
+    "ground2": "#0E2A21",
+    "accent": "#C96E3F",
+    "text": "#F4EFE4",
+    "ink": "#15201B"
+  },
+
+  "tones": {
+    "hot":    { "bg": "radial-gradient(90% 60% at 50% 0%,#E08A4F 0%,#C96E3F 30%,#9E4F2C 72%,#6E351C 100%)", "text": "#F4EFE4", "eye": "#FCEADD", "eyeLine": "#F4EFE4" },
+    "forest": { "bg": "radial-gradient(80% 55% at 50% 4%,#2C5B45 0%,#4A6741 34%,#15392E 78%,#0E2A21 100%)", "text": "#F4EFE4", "eye": "#E7B58C", "eyeLine": "#C96E3F" },
+    "paper":  { "bg": "linear-gradient(160deg,#FBF8F0 0%,#F4EFE4 55%,#E9E1CF 100%)", "text": "#15201B", "eye": "#C96E3F", "eyeLine": "#C96E3F" }
+  },
+
+  "order": ["hero", "compete", "results", "feature-a", "feature-b"],
+
+  "screens": {
+    "hero":      { "eyebrow": "LIVE", "head": "Your hero\nheadline", "tone": "hot", "pop": { "big": "15", "sub": "QUESTIONS", "color": "#C96E3F" } },
+    "compete":   { "eyebrow": "LEADERBOARD", "head": "Play to\nwin", "tone": "forest", "pop": { "big": "#1", "sub": "YOUR RANK", "color": "#D8A24A" } },
+    "results":   { "eyebrow": "RESULTS", "head": "Instant\nfeedback", "tone": "forest", "pop": { "big": "92%", "sub": "CORRECT", "color": "#3E8E5A" } },
+    "feature-a": { "eyebrow": "FEATURE", "head": "What this\nscreen does", "tone": "paper" },
+    "feature-b": { "eyebrow": "FEATURE", "head": "Another\nbenefit", "tone": "paper" }
+  },
+
+  "devices": {
+    "_note": "Built-in keys: iphone-6.9, iphone-6.5, ipad-13, android-phone, android-tablet. Add or override here. 'kind' is phone|tablet (controls proportions). Per-screen 'fallback' lets a device reuse another raw, e.g. ipad reusing a teacher screen for a student-only live frame.",
+    "iphone-6.9":     { "w": 1320, "h": 2868, "kind": "phone" },
+    "ipad-13":        { "w": 2064, "h": 2752, "kind": "tablet" },
+    "android-phone":  { "w": 1080, "h": 2400, "kind": "phone" },
+    "android-tablet": { "w": 1600, "h": 2560, "kind": "tablet" }
+  }
+}

@@ -1,0 +1,5 @@
+# EAS build artifacts — produced by `eas build`, uploaded to the stores, never
+# committed (an .aab is ~74MB). Add these to your app's .gitignore.
+build-*.aab
+build-*.ipa
+*.apk

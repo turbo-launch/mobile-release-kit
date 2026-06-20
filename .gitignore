@@ -1,0 +1,11 @@
+# dependencies (Playwright is a peer/dev install, not vendored)
+node_modules/
+
+# local render output / scratch
+out/
+*.local.png
+.DS_Store
+
+# editor
+.vscode/
+.idea/
