@@ -8,6 +8,8 @@ Getting an app onto the stores is mostly undocumented friction: screenshots at t
 
 It's a [Claude Code](https://code.claude.com) plugin **and** a set of standalone Node/Bash scripts — use whichever fits.
 
+![A raw app screenshot on the left, the same screen framed into a store marketing image on the right](docs/media/before-after.png)
+
 ![Three framed App Store screenshots produced by this kit — a live quiz, a leaderboard, and a results screen](docs/media/example-frames.png)
 
 <sub>Real output from the kit (the app it was extracted from). Your palette, headlines, and screens; same pipeline.</sub>
