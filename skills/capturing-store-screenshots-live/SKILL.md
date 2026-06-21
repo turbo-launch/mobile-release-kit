@@ -30,6 +30,8 @@ The plugin ships two scripts. Capture re-applies the clean status bar (it resets
 
 `sim-capture.sh` calls `sim-clean-statusbar.sh`, which forces **9:41 + full battery (discharging 100%, NOT "charged" — "charged" draws a lightning bolt) + full signal**, then `xcrun simctl io screenshot`, and prints the pixel size so you can confirm it matches a store slot.
 
+**Pick a simulator that yields the required raw size.** Apple's 6.9" slot is **1320×2868** — capture on an **iPhone 16 Pro Max / 17 Pro Max**. Most other simulators don't match (e.g. iPhone 15 sim = 1179×2556), so framing them produces wrong-size output you'll only catch at upload. The iPad 13" slot (2064×2752) comes from an iPad Pro 13".
+
 ## Gotchas — no dev chrome in shots (hard rules)
 
 - **Expo dev-launcher floating gear.** Open the dev menu, turn **OFF "Tools button"** so the gear stops overlaying every screen.
@@ -37,6 +39,7 @@ The plugin ships two scripts. Capture re-applies the clean status bar (it resets
 - **Fresh bundle.** After editing JS, terminate + relaunch the app (or tap the Metro server entry in the dev launcher) so the new bundle loads — a relaunch alone may serve the old one.
 - **Onboarding tours.** Dismiss tour overlays / coachmarks before capturing.
 - **Empty states.** Skip sparse screens; seed first and pick the richest entity for any detail screen.
+- **Consistent appearance.** Capture the whole set in one appearance (light or dark) — the stores show one set regardless of the viewer's theme. Don't mix.
 
 ## Output
 

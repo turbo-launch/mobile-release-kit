@@ -108,14 +108,7 @@ A device-on-a-gradient with a headline is easy. A device-on-a-gradient that *con
 - **One background system, hottest hero.** Consistent palette across the set, but the hero frame gets the most saturated `tone` so it pops in the thumbnail strip.
 - **Benefit headlines, 2–4 words** — plus an optional energy "pop" chip (a big number, rank, or %) on the competitive frames.
 
-Every screen is one entry in a JSON config — no per-app code. Output lands at the exact required pixel sizes:
-
-| Device key | Pixels | Notes |
-|------------|--------|-------|
-| `iphone-6.9` | 1320×2868 | Apple's required size; covers all smaller iPhones |
-| `ipad-13` | 2064×2752 | only if `supportsTablet` |
-| `android-phone` | 1080×2400 | Play recommended |
-| `android-tablet` | 1600×2560 | Play 10-inch tablet |
+Every screen is one entry in a JSON config — no per-app code. Output lands at the exact required pixel sizes: `iphone-6.9` (1320×2868, covers all smaller iPhones), `ipad-13` (2064×2752), `android-phone` (1080×1920), `android-tablet` (1600×2560), and `feature-graphic` (1024×500, the Play banner). Full specs and the gotchas behind them: [`docs/store-specs.md`](docs/store-specs.md).
 
 ---
 
@@ -128,7 +121,7 @@ The runbook and skills carry the fixes for the failures that bite everyone:
 - **Review rejection (Guideline 2.1)** → demo credentials in the review notes must actually work; the listing template makes that a required field.
 - **Screenshots that ship broken** — the web-capture path *asserts a screen isn't empty/errored before it screenshots*, because "a PNG was written" is not "the PNG is good."
 - **Dev chrome in shots** (Expo dev-launcher gear, `__DEV__` quick-login) → the live-capture skill walks scrubbing it without shipping the change.
-- **A 74 MB `.aab` committed to git** → a bundled hook warns you before it happens; the gitignore snippet prevents it.
+- **A 74 MB `.aab` committed to git** → in Claude Code a bundled hook warns before it happens; everywhere else the gitignore snippet + the AGENTS.md rule prevent it.
 - **Hermes vs. web `Intl`** date garbage, wrong-platform RN-Web controls in iOS shots, stale Metro bundle — all documented where they'd otherwise eat an afternoon.
 
 ---
@@ -140,14 +133,15 @@ The runbook and skills carry the fixes for the failures that bite everyone:
 | Skill | `framing-store-screenshots` | Raw screenshots → framed marketing images |
 | Skill | `capturing-store-screenshots-live` | Native iOS Simulator capture (live / multiplayer hero screens) |
 | Skill | `capturing-store-screenshots-web` | Expo web-bundle capture (fast static batches, CI-friendly) |
-| Skill | `releasing-with-eas` | EAS build → submit → review runbook |
-| Skill | `writing-store-listings` | Listing copy + review notes within store limits |
+| Skill | `releasing-with-eas` | EAS build → submit → review runbook (with the gotchas) |
+| Skill | `driving-a-release` | Guided, resumable release — generates a tracked `RELEASE-CHECKLIST.md`, walks it as a live TODO, stops at billed steps |
+| Skill | `writing-store-listings` | Listing copy, release notes, review notes within store limits |
 | Command | `/…:frame-screenshots` | One-shot framing of a screenshot folder |
-| Command | `/…:release` | Walk the EAS runbook (stops before billed actions) |
+| Command | `/…:release` | Drive an interactive, resumable release with a tracked checklist |
 | Agent | `release-orchestrator` | Runs the whole pipeline across the skills |
-| Hook | — | Warns before a `git` command commits a build artifact |
-| Scripts | `frame-screenshots.js`, `contact-sheet.js`, `sim-capture.sh`, `sim-clean-statusbar.sh`, … | The standalone tools |
-| Templates | `frames.config.json`, `eas.json`, listing + `PUBLISH`/`PREFLIGHT` runbooks, gitignore snippet | Copy-and-fill starting points |
+| Hook | — | (Claude Code) warns before a `git` command commits a build artifact |
+| Scripts | `frame-screenshots.js` (incl. `feature-graphic` mode), `contact-sheet.js`, `mcp-server.js`, `sim-capture.sh`, … | The standalone tools |
+| Templates | `frames.config.json`, `eas.json`, listing + release-notes + `PUBLISH`/`PREFLIGHT`/`RELEASE-CHECKLIST` runbooks | Copy-and-fill starting points |
 
 ---
 

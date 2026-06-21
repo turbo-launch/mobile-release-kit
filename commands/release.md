@@ -1,18 +1,14 @@
 ---
-description: Start an EAS release for an Expo app — walk the build/submit runbook with stops before any billed action.
+description: Drive an interactive, resumable App Store / Play Store release with a tracked checklist.
 argument-hint: "[ios|android|all]"
 ---
 
-Start an EAS release for this Expo app.
+Drive a release for this Expo app, target platform **$0** (default `all`).
 
-Target platform: **$0** (if `$0` is empty, default to `all`).
+Use the **driving-a-release** skill:
 
-Invoke the **releasing-with-eas** skill and walk its runbook for the target platform, in order:
+1. Find or create `docs/ops/mobile-releases/v<version>/RELEASE-CHECKLIST.md` (copy `templates/RELEASE-CHECKLIST.md`; read the version from `app.config.ts` / `app.json`). If it already exists, **read it and resume** from the first unchecked step — don't restart.
+2. Load the unchecked items into your live TODO list so we walk them in order, and tell me where we are.
+3. Walk the steps, following **releasing-with-eas** for the how. Tick each box in the checklist file (and the TODO) as it completes — the file is the source of truth across sessions.
 
-1. Begin with the **pre-flight checklist** (the skill's pre-flight step / `templates/PREFLIGHT.md`). Work through every item — version + build-number bump, clean git tree, correct channel/profile, store credentials present, listing + review notes ready, screenshots framed. Report the results back as a checklist.
-2. Resolve the version and build number per the skill's version/build-number rule before anything is built.
-3. Only once pre-flight passes, proceed toward the build and submit steps for the requested platform(s).
-
-**STOP for explicit human confirmation before running any `eas build` or `eas submit` command.** These are billed, outward-facing, irreversible actions. Show the exact command(s) you intend to run, summarize what they will do (profile, platform, channel, what gets submitted where), and wait for the human to say go. Never run them automatically as part of walking the runbook.
-
-Do not fabricate Apple or Google identifiers — leave any `REPLACE_WITH_*` markers intact and ask the human to fill them in. After a build or submit, follow the skill's post-release step (tag, monitor, gitignore artifacts).
+**STOP for my explicit confirmation before any `[CONFIRM]` step** (`eas build`, `eas submit`, Submit for Review, Promote to Production) — show the exact command and what it does, then wait. Never fabricate Apple/Google IDs (leave `REPLACE_WITH_*`). Record any blocker under Notes rather than skipping ahead.

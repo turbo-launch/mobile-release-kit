@@ -1,0 +1,20 @@
+RELEASE NOTES — [APP NAME] v[VERSION]
+The "What's New" text both stores show on an update. One block per locale.
+Benefit-led, scannable. Lead with what the user gains, not internal refactors.
+
+--- App Store ("What's New in This Version") ---
+[2-5 short lines. e.g.]
+• [New thing users will notice]
+• [Improvement to an existing flow]
+• Bug fixes and performance improvements
+
+--- Google Play ("What's new") — MAX 500 chars per language ---
+[Same spirit, <=500 chars. Play truncates hard.]
+• [New thing]
+• [Improvement]
+• Fixes & polish
+
+--- Notes ---
+- First release? Use a short "Welcome to [APP NAME]" intro instead of a changelog.
+- Keep one block per shipped locale (e.g. en, az); translate natively, don't calque.
+- Don't list internal/refactor work users can't see.

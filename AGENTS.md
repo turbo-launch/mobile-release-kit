@@ -14,6 +14,7 @@ The skills under `skills/` are the source of truth for *how* to do each task. Wh
 - **Capture native screenshots from iOS Simulators (live / hero screens)** → `skills/capturing-store-screenshots-live/SKILL.md`
 - **Capture screenshots from the Expo web bundle (fast static batches)** → `skills/capturing-store-screenshots-web/SKILL.md`
 - **Build + submit with EAS** → `skills/releasing-with-eas/SKILL.md`
+- **Run the release as a guided, resumable, checklist-tracked flow** → `skills/driving-a-release/SKILL.md`
 - **Write listing copy + review notes** → `skills/writing-store-listings/SKILL.md`
 
 ## Scripts (run via your shell tool)

@@ -40,10 +40,19 @@ App Review **will reject** if demo credentials don't work. Include:
 - For any gated content (PIN to join, invite code, paid tier), give the reviewer exactly how to reach it — they won't create their own.
 - A short note for non-obvious permissions ("Camera prompt appears only after tapping Scan QR, never at launch").
 
-## Localized listings
+## Release notes ("What's New")
 
-Each locale (e.g. EN + a second market language) gets its own copy. Store one file per locale; in App Store Connect / Play Console add the localization and paste the matching file. Translate as a native speaker would, not word-for-word.
+Both stores show a per-update "What's New" string. Benefit-led, scannable, lead with what the user gains. **Play caps release notes at 500 chars per language.** First release: a short "Welcome to [App]" beats a changelog. Fill `templates/release-notes.txt` (one block per locale).
+
+## Localized listings — workflow
+
+Each locale gets its own copy. What's per-locale vs. global:
+
+- **Per-locale** (translate each): Name/App name, Subtitle/Short description, Description/Full description, Keywords, Promotional text, **release notes**, and **screenshots** (both consoles store screenshots per localization — re-upload the set under each language, or they fall back to the default).
+- **Global** (set once): category, URLs, age rating, App Privacy / Data safety, demo creds.
+- Play requires a **default language**; other locales fall back to it for any field you leave empty.
+- Store one file per locale (`shared/`, `ios/`, `android/` under `docs/ops/mobile-releases/v<version>/<lang>/`). Translate as a native speaker would, not word-for-word.
 
 ## Starting points
 
-Fill in `templates/app-store-listing.txt` and `templates/play-store-listing.txt` (limits are inline; placeholders are `[ … ]` and `REPLACE_WITH_*`).
+Fill in `templates/app-store-listing.txt`, `templates/play-store-listing.txt`, and `templates/release-notes.txt` (limits inline; placeholders are `[ … ]` and `REPLACE_WITH_*`).

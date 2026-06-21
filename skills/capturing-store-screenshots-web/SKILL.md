@@ -53,19 +53,30 @@ bun start --web --clear     # plain `start` serves a CACHED bundle — you'll ch
 
 ## Verify — the #1 weakness
 
-Success here means "a PNG was written," **not** "the PNG is good." A screen that failed to seed renders its empty state ("No matches yet") and ships looking broken. So **assert before you capture**:
+Success here means "a PNG was written," **not** "the PNG is good." A screen that failed to seed renders its empty state ("No matches yet") and ships looking broken. So **assert before you capture** — and make the **positive** check (expected content present) the primary gate, with a *narrow* blocklist secondary:
 
 ```js
-const BAD = /no matches|nothing here|nothing yet|couldn'?t load|something went wrong|\bundefined\b|\bNaN\b|error/i;
-async function assertGood(page) {
+// Primary gate: the screen's own hero/content must be present. Per-screen.
+async function assertHero(page, expectText) {
+  await page.locator(`text=${expectText}`).first().waitFor({ timeout: 3000 }); // throws if missing
+}
+
+// Secondary, NARROW blocklist — only UI-failure phrasing. Do NOT match a bare
+// "error" (matches "trial and error", "Error reporting" rows, brand words).
+const BAD = /failed to load|something went wrong|please try again|\bundefined\b|\bNaN\b|\$NaN/i;
+async function assertNoError(page) {
   const text = await page.evaluate(() => document.body.innerText || '');
   if (BAD.test(text)) throw new Error(`bad-state: "${text.match(BAD)[0]}"`);
-  // also assert the EXPECTED hero content is present, not just that no error shows.
 }
 ```
 
-- Add a `--verify` pass that re-opens each screen, runs `assertGood`, and prints a red/green table. Gate the release on it.
+- Per screen in your config, give an `expect` string (a word only the populated screen shows) and call `assertHero` first, then `assertNoError`.
+- Add a `--verify` pass that re-opens each screen, runs both, and prints a red/green table. Gate the release on it.
 - For any `{id}` detail screen, pick the **richest entity** (most children), not `[0]` — query each candidate's children and take the max, or the detail ships empty.
+
+## Appearance (light/dark)
+
+Capture in the app's most flattering appearance and keep the **whole set consistent** — both stores show one screenshot set regardless of the viewer's system theme, so don't mix light and dark frames. If the app defaults to light, drive light (set the `prefers-color-scheme` / the app's theme toggle before capture). See `docs/store-specs.md`.
 
 ## Known failure modes
 

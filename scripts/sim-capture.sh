@@ -4,6 +4,11 @@
 # status bar. Pair with a UI driver (Claude's mobile-mcp tools, Maestro, or hand
 # navigation) that puts the app on the screen you want first.
 #
+# Capture on a simulator whose pixels match a store slot, or the framed output
+# is the wrong size: iPhone 6.9" (1320x2868) = iPhone 16/17 Pro Max; iPad 13"
+# (2064x2752) = iPad Pro 13". Most other sims do NOT match (e.g. iPhone 15 =
+# 1179x2556). This script prints the captured WxH — check it before framing.
+#
 #   ./sim-capture.sh <UDID> <out.png> [phone|pad]
 #
 # Typical loop (driven by the live-simulator-capture skill):

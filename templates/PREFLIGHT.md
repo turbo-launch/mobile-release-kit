@@ -31,8 +31,10 @@ Gates [PUBLISH.md](PUBLISH.md). Every box must be checked before `eas build`.
 - [ ] Creds **verified working** (signed in successfully just now) and pasted into the listing files.
 - [ ] Review notes explain how to exercise any gated flow (PIN/code/role).
 
-## Assets
-- [ ] Screenshots present for every required device size: iPhone 6.9" (+ iPad 13" if `supportsTablet`), Android phone (+ tablet if shipped).
-- [ ] Screenshots present for every shipped locale.
-- [ ] Feature graphic (1024×500) ready for Play.
+## Assets (sizes/specs: see docs/store-specs.md)
+- [ ] Screenshots present for every required device size: iPhone 6.9" 1320×2868 (+ iPad 13" 2064×2752 if `supportsTablet`), Android phone 1080×1920 (+ tablet if shipped). Android stays within the 1:2–2:1 aspect cap.
+- [ ] Screenshots present for every shipped locale, all in one appearance (don't mix light/dark).
+- [ ] Feature graphic 1024×500 (no alpha) ready for Play.
+- [ ] App icon: Apple 1024×1024 **no alpha / square / not pre-rounded**; Play 512×512 **with alpha**.
+- [ ] Release notes ("What's New") written per locale (Play ≤500 chars).
 - [ ] Build artifacts gitignored (`build-*.aab`, `build-*.ipa`, `*.apk`).

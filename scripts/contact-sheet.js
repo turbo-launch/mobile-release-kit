@@ -16,7 +16,7 @@ const path = require('path');
   if (!dir || !out) { console.error('usage: contact-sheet.js <dir> <out.png> [cols]'); process.exit(1); }
   const files = fs.readdirSync(dir).filter(f => f.endsWith('.png')).sort();
   if (!files.length) { console.error('no PNGs in ' + dir); process.exit(1); }
-  const COLS = parseInt(colsArg || '6', 10);
+  const COLS = parseInt(colsArg || '5', 10);
   const cells = files.map(f => {
     const b64 = fs.readFileSync(path.join(dir, f)).toString('base64');
     return `<div class="c"><img src="data:image/png;base64,${b64}"/><div class="l">${f}</div></div>`;

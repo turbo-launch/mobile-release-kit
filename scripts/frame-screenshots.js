@@ -12,7 +12,7 @@
  *   <rawDir>       dir of raw <screen-key>.png screenshots (the inputs)
  *   <outDir>       where to write NN-<screen-key>.png framed images
  *   <device>       iphone-6.9 | ipad-13 | android-phone | android-tablet
- *                  (or any key under config.devices)
+ *                  | feature-graphic   (or any key under config.devices)
  *
  * Requires Playwright + a Chromium browser:
  *   npm i -D playwright && npx playwright install chromium
@@ -30,16 +30,34 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-// Built-in store sizes. Override or extend via config.devices.
+// Built-in store sizes (current as of 2026 — see docs/store-specs.md, the single
+// source of truth). Override or extend via config.devices.
+//   kind 'phone'|'tablet' = a portrait device frame; 'graphic' = the landscape
+//   Play feature graphic (no device chassis, just background + headline).
 const DEFAULT_DEVICES = {
-  'iphone-6.9':     { w: 1320, h: 2868, kind: 'phone' },   // iPhone 16/17 Pro Max — Apple's required size
-  'iphone-6.5':     { w: 1242, h: 2688, kind: 'phone' },
-  'ipad-13':        { w: 2064, h: 2752, kind: 'tablet' },  // iPad Pro 13"
-  'android-phone':  { w: 1080, h: 2400, kind: 'phone' },   // Play recommended 20:9
-  'android-tablet': { w: 1600, h: 2560, kind: 'tablet' },  // Play 10-inch tablet
+  'iphone-6.9':      { w: 1320, h: 2868, kind: 'phone' },   // iPhone 16/17 Pro Max — Apple's only required iPhone size
+  'ipad-13':         { w: 2064, h: 2752, kind: 'tablet' },  // iPad Pro 13" (only if supportsTablet)
+  'android-phone':   { w: 1080, h: 1920, kind: 'phone' },   // 16:9 — safe under Play's 1:2..2:1 aspect cap (1080x2400 is REJECTED)
+  'android-tablet':  { w: 1600, h: 2560, kind: 'tablet' },  // Play 10-inch tablet
+  'feature-graphic': { w: 1024, h: 500,  kind: 'graphic' }, // Play feature graphic (required, landscape, no alpha)
 };
 
 function die(msg) { console.error('frame-screenshots: ' + msg); process.exit(1); }
+
+// Escape user-supplied copy so an &, <, or > in a headline can't break the markup.
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Read a PNG's pixel dimensions from the IHDR chunk (bytes 16-23), no deps.
+function pngSize(file) {
+  try {
+    const b = fs.readFileSync(file);
+    if (b.length < 24 || b.toString('ascii', 1, 4) !== 'PNG') return null;
+    return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
+  } catch { return null; }
+}
 
 function loadConfig(p) {
   if (!fs.existsSync(p)) die(`config not found: ${p}`);
@@ -68,12 +86,30 @@ function toneCss(cfg, toneName) {
 }
 
 function buildHTML(cfg, dev, screen, imgDataUri) {
-  const isTablet = dev.kind === 'tablet';
-  const small = dev.w <= 1100; // android phone canvas is narrow → scale type down
   const t = toneCss(cfg, screen.tone || cfg.defaultTone || 'forest');
   const font = cfg.fontFamily || '-apple-system,"SF Pro Display","Helvetica Neue",Arial,sans-serif';
-  const tilt = cfg.tilt ? (isTablet ? -4 : -5) : 0;
   const watermark = cfg.watermark || '';
+
+  // Feature graphic: landscape banner, no device chassis — background + headline.
+  if (dev.kind === 'graphic') {
+    const fg = Math.round(dev.h * 0.18);  // ~90px headline on a 500px-tall banner
+    const eg = Math.round(dev.h * 0.05);
+    return `<!doctype html><html><head><meta charset="utf-8"><style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    html,body{width:${dev.w}px;height:${dev.h}px;overflow:hidden;}
+    .stage{position:relative;width:${dev.w}px;height:${dev.h}px;background:${t.bg};font-family:${font};
+      display:flex;flex-direction:column;justify-content:center;padding:0 ${Math.round(dev.w * 0.08)}px;overflow:hidden;}
+    .eyebrow{color:${t.eye};font-size:${eg}px;font-weight:800;letter-spacing:5px;margin-bottom:14px;}
+    .head{color:${t.text};font-size:${fg}px;font-weight:800;line-height:1.0;letter-spacing:-1.5px;white-space:pre-line;}
+    </style></head><body><div class="stage">
+      ${screen.eyebrow ? `<div class="eyebrow">${esc(screen.eyebrow)}</div>` : ''}
+      <div class="head">${esc(screen.head)}</div>
+    </div></body></html>`;
+  }
+
+  const isTablet = dev.kind === 'tablet';
+  const small = dev.w <= 1100; // android phone canvas is narrow → scale type down
+  const tilt = cfg.tilt ? (isTablet ? -4 : -5) : 0;
 
   const chassis   = isTablet ? 24 : 16;
   const radius    = isTablet ? 76 : small ? 60 : 82;
@@ -88,10 +124,11 @@ function buildHTML(cfg, dev, screen, imgDataUri) {
   const deviceBottom = -Math.round(dev.h * (isTablet ? 0.09 : 0.10));
 
   const pop = screen.pop;
+  const popColor = (pop && pop.color) || (cfg.palette && cfg.palette.accent) || '#C96E3F';
   const popHTML = pop ? `
-    <div class="pop" style="--pc:${pop.color || (cfg.palette && cfg.palette.accent) || '#C96E3F'}">
-      <div class="pop-big">${pop.big || ''}</div>
-      ${pop.sub ? `<div class="pop-sub">${pop.sub}</div>` : ''}
+    <div class="pop" style="--pc:${esc(popColor)}">
+      <div class="pop-big">${esc(pop.big)}</div>
+      ${pop.sub ? `<div class="pop-sub">${esc(pop.sub)}</div>` : ''}
     </div>` : '';
 
   const wmHTML = watermark ? `<div class="wm">${watermark}</div>` : '';
@@ -113,7 +150,7 @@ function buildHTML(cfg, dev, screen, imgDataUri) {
   .pop-sub{color:rgba(255,255,255,0.92);font-size:${isTablet ? 24 : 20}px;font-weight:800;letter-spacing:2px;margin-top:6px;}
   </style></head><body><div class="stage">
     ${wmHTML}
-    <div class="copy"><div class="eyebrow">${screen.eyebrow || ''}</div><div class="head">${screen.head || ''}</div></div>
+    <div class="copy"><div class="eyebrow">${esc(screen.eyebrow)}</div><div class="head">${esc(screen.head)}</div></div>
     <div class="device-wrap"><div class="chassis"><div class="screen"><img src="${imgDataUri}"/></div></div></div>
     ${popHTML}
   </div></body></html>`;
@@ -145,9 +182,26 @@ function buildHTML(cfg, dev, screen, imgDataUri) {
       const hit = fb.map(k => path.join(rawDir, k + '.png')).find(fs.existsSync);
       if (hit) src = hit;
     }
-    if (!fs.existsSync(src)) { skipped.push(`${key} (no raw png in ${rawDir})`); continue; }
+    // The feature graphic has no device screen — it doesn't consume a raw.
+    if (dev.kind !== 'graphic' && !fs.existsSync(src)) { skipped.push(`${key} (no raw png in ${rawDir})`); continue; }
 
-    const imgDataUri = 'data:image/png;base64,' + fs.readFileSync(src).toString('base64');
+    let imgDataUri = '';
+    if (dev.kind !== 'graphic') {
+      // Warn if the raw's aspect ratio is far from the device's, or it's tiny —
+      // the chassis stretches the <img> to fit, so a wrong-shape/low-res raw
+      // ships distorted with no error otherwise.
+      const sz = pngSize(src);
+      if (sz) {
+        const rawAR = sz.w / sz.h, devAR = dev.w / dev.h;
+        if (Math.abs(rawAR - devAR) / devAR > 0.12) {
+          console.warn(`  ⚠ ${key}: raw is ${sz.w}x${sz.h} (aspect ${rawAR.toFixed(2)}) but ${deviceKey} is ${devAR.toFixed(2)} — it will be stretched. Recapture at the device aspect.`);
+        }
+        if (sz.w < dev.w * 0.5) {
+          console.warn(`  ⚠ ${key}: raw width ${sz.w}px is low for a ${dev.w}px frame — it may look soft.`);
+        }
+      }
+      imgDataUri = 'data:image/png;base64,' + fs.readFileSync(src).toString('base64');
+    }
     await page.setContent(buildHTML(cfg, dev, screen, imgDataUri), { waitUntil: 'networkidle' });
     n++;
     const out = path.join(outDir, String(n).padStart(2, '0') + '-' + key + '.png');

@@ -28,7 +28,9 @@
     "compete":   { "eyebrow": "LEADERBOARD", "head": "Play to\nwin", "tone": "forest", "pop": { "big": "#1", "sub": "YOUR RANK", "color": "#D8A24A" } },
     "results":   { "eyebrow": "RESULTS", "head": "Instant\nfeedback", "tone": "forest", "pop": { "big": "92%", "sub": "CORRECT", "color": "#3E8E5A" } },
     "feature-a": { "eyebrow": "FEATURE", "head": "What this\nscreen does", "tone": "paper" },
-    "feature-b": { "eyebrow": "FEATURE", "head": "Another\nbenefit", "tone": "paper" }
+    "feature-b": { "eyebrow": "FEATURE", "head": "Another\nbenefit", "tone": "paper" },
+    "_feature-graphic_note": "For the Play feature graphic (1024x500), add a 'graphic' order list run with device 'feature-graphic' — it needs NO raw png (background + headline only). Example: a separate config, or render this set then run: node frame-screenshots.js <thisfile> <rawDir> <outDir> feature-graphic (it'll render every order entry as a banner; keep a graphic-only config if you just want one).",
+    "graphic":   { "eyebrow": "YOUR APP", "head": "One-line tagline for the store banner", "tone": "forest" }
   },
 
   "devices": {

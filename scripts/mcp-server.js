@@ -48,8 +48,8 @@ server.registerTool(
       rawDir: z.string().describe('Directory of raw <screen-key>.png screenshots'),
       outDir: z.string().describe('Output directory for framed NN-<key>.png images'),
       device: z
-        .enum(['iphone-6.9', 'iphone-6.5', 'ipad-13', 'android-phone', 'android-tablet'])
-        .describe('Target store device size'),
+        .enum(['iphone-6.9', 'ipad-13', 'android-phone', 'android-tablet', 'feature-graphic'])
+        .describe('Target store size: iphone-6.9 1320x2868, ipad-13 2064x2752, android-phone 1080x1920, android-tablet 1600x2560, feature-graphic 1024x500'),
     },
   },
   ({ configPath, rawDir, outDir, device }) =>
