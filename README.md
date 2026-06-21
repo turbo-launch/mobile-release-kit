@@ -1,5 +1,7 @@
 # Mobile Release Kit
 
+[![CI](https://github.com/turbo-launch/mobile-release-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/turbo-launch/mobile-release-kit/actions/workflows/ci.yml)
+
 **Ship Expo / React Native apps to the App Store and Google Play — screenshots, listings, and the EAS submit dance, minus the trial and error.**
 
 Getting an app onto the stores is mostly undocumented friction: screenshots at the wrong pixel size, a Play submit that dies on a service-account permission, a review rejected because the demo login didn't work, framing that makes a good app look like a template. This kit packages the parts that are easy to get wrong, with the judgment calls already made.

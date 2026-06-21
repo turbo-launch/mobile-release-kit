@@ -11,7 +11,9 @@
     "mrk-mcp": "scripts/mcp-server.js"
   },
   "scripts": {
-    "mcp": "node scripts/mcp-server.js"
+    "mcp": "node scripts/mcp-server.js",
+    "validate": "node scripts/validate-kit.js",
+    "test:mcp": "node scripts/test-mcp-boot.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

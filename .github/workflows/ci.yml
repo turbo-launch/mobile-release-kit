@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Validate plugin structure (JSON, frontmatter, references)
+        run: npm run validate
+
+      - name: Syntax-check scripts
+        run: |
+          for f in scripts/*.js; do node --check "$f"; done
+          for f in scripts/*.sh; do bash -n "$f"; done
+
+      - name: MCP server boot check
+        run: npm run test:mcp
+
+      - name: Render a frame end-to-end
+        run: |
+          npx playwright install --with-deps chromium
+          mkdir -p /tmp/out
+          # feature-graphic mode needs no raw — exercises the renderer end-to-end
+          printf '{"order":["banner"],"screens":{"banner":{"eyebrow":"CI","head":"It renders"}}}' > /tmp/ci.config.json
+          node scripts/frame-screenshots.js /tmp/ci.config.json /tmp/raw-unused /tmp/out feature-graphic
+          test -f /tmp/out/01-banner.png || { echo "no framed output produced"; exit 1; }
+          echo "rendered:"; ls -la /tmp/out

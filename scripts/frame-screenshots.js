@@ -165,7 +165,8 @@ function buildHTML(cfg, dev, screen, imgDataUri) {
   const devices = { ...DEFAULT_DEVICES, ...(cfg.devices || {}) };
   const dev = devices[deviceKey];
   if (!dev) die(`unknown device "${deviceKey}". Known: ${Object.keys(devices).join(', ')}`);
-  if (!fs.existsSync(rawDir)) die(`rawDir not found: ${rawDir}`);
+  // The feature graphic has no device screen, so it doesn't read raws.
+  if (dev.kind !== 'graphic' && !fs.existsSync(rawDir)) die(`rawDir not found: ${rawDir}`);
   fs.mkdirSync(outDir, { recursive: true });
 
   const browser = await chromium.launch();
