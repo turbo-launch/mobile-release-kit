@@ -15,8 +15,8 @@ It was extracted from a shipped Kahoot-style education app, then generalized. Th
 ## Install (as a Claude Code plugin)
 
 ```
-/plugin marketplace add dashgin/mobile-release-kit
-/plugin install mobile-release-kit@dashgin-tools
+/plugin marketplace add turbo-launch/mobile-release-kit
+/plugin install mobile-release-kit@turbo-launch
 ```
 
 Then, in any Expo project:

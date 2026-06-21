@@ -1,9 +1,9 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
-  "name": "dashgin-tools",
+  "name": "turbo-launch",
   "description": "Tools for shipping mobile apps — store-screenshot capture, device-frame rendering, and EAS release runbooks.",
   "owner": {
-    "name": "dashgin"
+    "name": "turbo-launch"
   },
   "plugins": [
     {
