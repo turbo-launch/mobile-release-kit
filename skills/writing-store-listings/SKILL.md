@@ -1,6 +1,7 @@
 ---
 name: writing-store-listings
-description: Use when writing or refreshing App Store / Play Store listing metadata — app name, subtitle, promotional text, description, keywords, and the App Review notes. Trigger on "store listing", "app description", "App Store metadata", "Play Store description", "keywords", "promotional text", "review notes", "demo account for review". Keywords: subtitle, promo text, character limit, ASO keywords, Guideline 2.1, Data safety, localized listing.
+description: >-
+  Use when writing or refreshing App Store / Play Store listing metadata — app name, subtitle, promotional text, description, keywords, and the App Review notes. Trigger on "store listing", "app description", "App Store metadata", "Play Store description", "keywords", "promotional text", "review notes", "demo account for review". Keywords: subtitle, promo text, character limit, ASO keywords, Guideline 2.1, Data safety, localized listing.
 ---
 
 # Writing store listings

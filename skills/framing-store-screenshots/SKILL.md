@@ -1,6 +1,7 @@
 ---
 name: framing-store-screenshots
-description: Use when raw app screenshots need to become App Store / Play Store marketing images — wrapping bare captures in a device frame with a headline, eyebrow, and branded background. Trigger on "frame the screenshots", "store marketing images", "make the captures look like a real listing", "add device frames", "framed deliverables", "screenshot gallery for the listing". Keywords: device frame, chassis, hero frame, eyebrow, headline, contact sheet, iPhone 6.9, Play Store screenshot size, ASO.
+description: >-
+  Use when raw app screenshots need to become App Store / Play Store marketing images — wrapping bare captures in a device frame with a headline, eyebrow, and branded background. Trigger on "frame the screenshots", "store marketing images", "make the captures look like a real listing", "add device frames", "framed deliverables", "screenshot gallery for the listing". Keywords: device frame, chassis, hero frame, eyebrow, headline, contact sheet, iPhone 6.9, Play Store screenshot size, ASO.
 ---
 
 # Framing store screenshots

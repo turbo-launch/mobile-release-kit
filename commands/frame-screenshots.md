@@ -1,6 +1,6 @@
 ---
 description: Frame raw app screenshots into App Store / Play Store marketing images.
-argument-hint: [rawDir] [outDir] [device]
+argument-hint: "[rawDir] [outDir] [device]"
 ---
 
 Frame the raw screenshots in `$0` into store marketing images in `$1` for device `$2` (default `iphone-6.9`).

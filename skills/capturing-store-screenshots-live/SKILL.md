@@ -1,6 +1,7 @@
 ---
 name: capturing-store-screenshots-live
-description: Use when store screenshots need REAL native captures from iOS Simulators — especially the live gameplay / hero screen of a real-time or multiplayer app that needs more than one actor on screen, or when pixel-perfect native chrome matters. Trigger on "live gameplay screenshot", "multiplayer / real-time hero shot", "capture from the simulator", "native screenshots", "the answer-grid / leaderboard / lobby screen", "two-device flow". Keywords: simctl, simulator, status bar, dev launcher, PIN, host, participant, native capture.
+description: >-
+  Use when store screenshots need REAL native captures from iOS Simulators — especially the live gameplay / hero screen of a real-time or multiplayer app that needs more than one actor on screen, or when pixel-perfect native chrome matters. Trigger on "live gameplay screenshot", "multiplayer / real-time hero shot", "capture from the simulator", "native screenshots", "the answer-grid / leaderboard / lobby screen", "two-device flow". Keywords: simctl, simulator, status bar, dev launcher, PIN, host, participant, native capture.
 ---
 
 # Capturing store screenshots from a live simulator

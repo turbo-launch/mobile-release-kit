@@ -1,6 +1,7 @@
 ---
 name: capturing-store-screenshots-web
-description: Use when capturing store screenshots from the Expo WEB bundle in headless Chromium instead of a simulator — fast batches of static screens, no simulator available, or CI. Trigger on "web bundle screenshots", "playwright screenshots", "capture without a simulator", "batch screenshot matrix", "screenshots in CI", "screenshots came out empty / broken / wrong". Keywords: playwright, headless chrome, deviceScaleFactor, seed, dev-login, sql.js, settle, verify, empty state, Hermes, RN-Web.
+description: >-
+  Use when capturing store screenshots from the Expo WEB bundle in headless Chromium instead of a simulator — fast batches of static screens, no simulator available, or CI. Trigger on "web bundle screenshots", "playwright screenshots", "capture without a simulator", "batch screenshot matrix", "screenshots in CI", "screenshots came out empty / broken / wrong". Keywords: playwright, headless chrome, deviceScaleFactor, seed, dev-login, sql.js, settle, verify, empty state, Hermes, RN-Web.
 ---
 
 # Capturing store screenshots from the web bundle

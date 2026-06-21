@@ -1,6 +1,7 @@
 ---
 name: releasing-with-eas
-description: Use when building and submitting an Expo app to the App Store and Google Play with EAS — the end-to-end build → submit → review runbook. Trigger on "ship the app", "release with EAS", "eas build / eas submit", "submit to App Store / Play", "publish the app", "TestFlight", "staged rollout", "release runbook", "store submission". Keywords: eas build, eas submit, appVersionSource, autoIncrement, service account, demo credentials, App Privacy, Data safety, internal track.
+description: >-
+  Use when building and submitting an Expo app to the App Store and Google Play with EAS — the end-to-end build → submit → review runbook. Trigger on "ship the app", "release with EAS", "eas build / eas submit", "submit to App Store / Play", "publish the app", "TestFlight", "staged rollout", "release runbook", "store submission". Keywords: eas build, eas submit, appVersionSource, autoIncrement, service account, demo credentials, App Privacy, Data safety, internal track.
 ---
 
 # Releasing with EAS
