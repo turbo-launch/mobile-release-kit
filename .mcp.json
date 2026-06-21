@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mobile-release-kit": {
+      "command": "node",
+      "args": ["scripts/mcp-server.js"]
+    }
+  }
+}

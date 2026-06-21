@@ -1,0 +1,20 @@
+{
+  "name": "mobile-release-kit",
+  "version": "0.1.0",
+  "description": "Ship Expo/RN apps to the App Store & Play Store: screenshot capture, device-frame rendering, EAS release runbooks.",
+  "author": { "name": "turbo-launch", "url": "https://github.com/turbo-launch" },
+  "homepage": "https://github.com/turbo-launch/mobile-release-kit",
+  "repository": "https://github.com/turbo-launch/mobile-release-kit",
+  "license": "MIT",
+  "keywords": ["expo","eas","app-store","play-store","screenshots","aso","release","mobile"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Mobile Release Kit",
+    "shortDescription": "Store screenshots, device frames, and EAS release for Expo/RN apps",
+    "longDescription": "Capture store screenshots (live simulator or web bundle), frame them into conversion-oriented marketing images at exact store sizes, and run the EAS build/submit release with the real gotchas handled.",
+    "developerName": "turbo-launch",
+    "category": "Coding",
+    "capabilities": ["Interactive","Read","Write"],
+    "websiteURL": "https://github.com/turbo-launch/mobile-release-kit"
+  }
+}

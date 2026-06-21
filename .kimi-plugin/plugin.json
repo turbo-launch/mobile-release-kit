@@ -1,0 +1,18 @@
+{
+  "name": "mobile-release-kit",
+  "version": "0.1.0",
+  "description": "Ship Expo/RN apps to the App Store & Play Store: screenshot capture, device-frame rendering, EAS release runbooks.",
+  "author": { "name": "turbo-launch" },
+  "homepage": "https://github.com/turbo-launch/mobile-release-kit",
+  "license": "MIT",
+  "keywords": ["expo","eas","app-store","play-store","screenshots","aso","release","mobile"],
+  "skills": "./skills/",
+  "skillInstructions": "Kimi Code tool mapping: when a skill says to ask the user / present options, call Kimi's AskUserQuestion. When a skill refers to TodoWrite, use Kimi's TodoList. When a skill says to dispatch a subagent, use Kimi's Agent tool (subagent_type 'coder' for implementation, 'explore' for read-only search, 'plan' for design) — never pass 'general-purpose'. Use Kimi's Read/Write/Edit/Bash/Grep/Glob/FetchURL/WebSearch and MCP tools by their actual names.",
+  "interface": {
+    "displayName": "Mobile Release Kit",
+    "shortDescription": "Store screenshots, device frames, and EAS release for Expo/RN apps",
+    "developerName": "turbo-launch",
+    "capabilities": ["Interactive","Read","Write"],
+    "websiteURL": "https://github.com/turbo-launch/mobile-release-kit"
+  }
+}

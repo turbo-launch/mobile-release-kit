@@ -9,3 +9,6 @@ out/
 # editor
 .vscode/
 .idea/
+
+# npm lockfile (deps are loose ranges for a tool/plugin)
+package-lock.json

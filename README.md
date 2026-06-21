@@ -15,7 +15,7 @@ It's a [Claude Code](https://code.claude.com) plugin **and** a set of standalone
 ## Contents
 
 - [Why this exists](#why-this-exists)
-- [Quickstart](#quickstart) · [as a Claude Code plugin](#path-a--claude-code-plugin) · [as plain scripts](#path-b--standalone-scripts)
+- [Quickstart](#quickstart) · [install in your agent](#install-in-your-agent) · [as plain scripts](#path-b--standalone-scripts) · [as an MCP server](#as-an-mcp-server)
 - [The opinionated part: framing](#the-opinionated-part-framing)
 - [Gotchas it already knows](#gotchas-it-already-knows)
 - [What's in the box](#whats-in-the-box)
@@ -38,21 +38,25 @@ Extracted from a shipped Kahoot-style education app, then generalized so the spe
 
 ## Quickstart
 
-### Path A — Claude Code plugin
+Three ways to use it: as a **plugin in your AI agent**, as **plain scripts**, or as an **MCP server**.
 
-```text
-/plugin marketplace add turbo-launch/mobile-release-kit
-/plugin install mobile-release-kit@turbo-launch
-```
+### Install in your agent
 
-Then drive it by command or just by asking:
+The skills, the canonical `AGENTS.md`, and the standalone scripts work across agents. Install per harness (install separately for each one you use):
 
-```text
-/mobile-release-kit:frame-screenshots ./raw ./out iphone-6.9
-/mobile-release-kit:release ios
-```
+| Agent | Install |
+|-------|---------|
+| **Claude Code** | `/plugin marketplace add turbo-launch/mobile-release-kit` then `/plugin install mobile-release-kit@turbo-launch` |
+| **Codex** (CLI/app) | Add the repo via the Codex plugin marketplace, or clone it — Codex reads `AGENTS.md` natively. |
+| **Cursor** | Install from the Cursor plugin marketplace, or clone — Cursor reads `AGENTS.md` and the `skills/` (SKILL.md) natively. |
+| **Gemini CLI** | `gemini extensions install https://github.com/turbo-launch/mobile-release-kit` |
+| **Kimi Code** | Install from Kimi's plugin marketplace, or `/plugins install https://github.com/turbo-launch/mobile-release-kit` |
+| **OpenCode** | Add `"mobile-release-kit@git+https://github.com/turbo-launch/mobile-release-kit.git"` to your `opencode.json` `plugin` array — see [`.opencode/INSTALL.md`](.opencode/INSTALL.md) |
+| **Copilot / Windsurf / Amp / Cline / Zed** | Clone the repo into your project — these read `AGENTS.md` automatically. |
 
-> "capture store screenshots and frame them" · "ship this to TestFlight" — the **release-orchestrator** agent picks the right skills and stops before anything billed or irreversible.
+Then just ask — "capture store screenshots and frame them" · "ship this to TestFlight" — and the agent follows the right skill. In Claude Code you also get slash commands (`/mobile-release-kit:frame-screenshots`, `/mobile-release-kit:release`) and the **release-orchestrator** agent, which stops before anything billed or irreversible.
+
+> One source of truth: `AGENTS.md` holds the instructions; `CLAUDE.md`/`GEMINI.md` point at it; each `.{claude,codex,cursor,kimi}-plugin/` manifest reuses the same `skills/`. No content is duplicated per agent.
 
 ### Path B — standalone scripts
 
@@ -76,6 +80,22 @@ node scripts/contact-sheet.js ./out ./contact-sheet.png 5
 ```
 
 Copy [`templates/frames.config.json`](templates/frames.config.json), set the palette and per-screen `eyebrow`/`head` copy, and order the screens — **frame 1 = your most exciting screen.** In a Bun/Expo monorepo that already has Playwright, reuse it: `NODE_PATH=./node_modules node scripts/frame-screenshots.js …`.
+
+### As an MCP server
+
+The framing tools are also exposed over [MCP](https://modelcontextprotocol.io) (stdio), for agents that prefer a typed tool surface or that gate the shell (e.g. unattended cloud agents). A committable [`.mcp.json`](.mcp.json) is included:
+
+```jsonc
+// .mcp.json — read by Claude Code, Cursor, Gemini CLI, Cline, Windsurf
+{ "mcpServers": { "mobile-release-kit": { "command": "node", "args": ["scripts/mcp-server.js"] } } }
+```
+
+```bash
+npm install                      # @modelcontextprotocol/sdk + zod (+ playwright)
+node scripts/mcp-server.js       # exposes: frame_screenshots, contact_sheet
+```
+
+For most agents this is optional — they can run the scripts via their shell tool straight from [`AGENTS.md`](AGENTS.md), which is lighter on context. Reach for MCP when the shell is restricted or you want validated parameters.
 
 ---
 
@@ -135,14 +155,19 @@ The runbook and skills carry the fixes for the failures that bite everyone:
 
 ```text
 mobile-release-kit/
-├── .claude-plugin/      # plugin.json + marketplace.json (install metadata)
-├── skills/              # the five release skills
-├── commands/            # /frame-screenshots, /release
+├── AGENTS.md            # canonical agent instructions (CLAUDE.md/GEMINI.md point here)
+├── skills/              # the five release skills (shared by every agent)
+├── commands/            # /frame-screenshots, /release  (Claude/Codex/Cursor)
 ├── agents/              # release-orchestrator
 ├── hooks/               # build-artifact safety guard
-├── scripts/             # frame-screenshots.js, contact-sheet.js, sim-*.sh, guard-*.sh
+├── scripts/             # frame-screenshots.js, contact-sheet.js, mcp-server.js, sim-*.sh
 ├── templates/           # frames.config.json, eas.json, listings, PUBLISH/PREFLIGHT
-└── docs/                # release-tree convention, store specs, media
+├── docs/                # release-tree convention, store specs, media
+├── .mcp.json            # MCP server config
+├── .claude-plugin/      # Claude Code manifest + marketplace
+├── .codex-plugin/  .cursor-plugin/  .kimi-plugin/   # each reuses the shared ./skills/
+├── .opencode/  .pi/                                 # — no content duplicated per agent
+└── gemini-extension.json + .gemini/                 # Gemini CLI extension
 ```
 
 See [`docs/store-specs.md`](docs/store-specs.md) for every pixel size and listing character limit, and [`docs/release-tree.md`](docs/release-tree.md) for organizing release artifacts per version.

@@ -1,0 +1,23 @@
+{
+  "name": "mobile-release-kit",
+  "version": "0.1.0",
+  "description": "Ship Expo/RN apps to the App Store & Play Store: screenshot capture, device-frame rendering, and EAS release runbooks.",
+  "license": "MIT",
+  "repository": "https://github.com/turbo-launch/mobile-release-kit",
+  "type": "commonjs",
+  "bin": {
+    "mrk-frame": "scripts/frame-screenshots.js",
+    "mrk-contact-sheet": "scripts/contact-sheet.js",
+    "mrk-mcp": "scripts/mcp-server.js"
+  },
+  "scripts": {
+    "mcp": "node scripts/mcp-server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "playwright": "^1.40.0"
+  }
+}
