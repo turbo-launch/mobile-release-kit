@@ -36,6 +36,19 @@ For each step, in order:
 - Don't tick a box you didn't verify — a green check means the step actually happened.
 - Gate strictly on Pre-flight (§0): don't build until every §0 box is checked.
 - One release folder per version; a new version starts a fresh checklist.
+- **Reconcile the review notes against the final screenshots**, as a step in its own right, after captures are locked. Listing copy is drafted early and screenshots land late; the draft's claims about login/access go stale. See `writing-store-listings` → "Anonymous-first ≠ no credentials needed".
+- **Log app defects found during capture under Notes / blockers** instead of fixing them inline. Driving screens for screenshots surfaces real bugs (a blank status bar, platform-inconsistent formatting). They're findings for the user to triage, not release work — and a speculative fix mid-capture invalidates raws you already took. If you do try one and it doesn't work, revert it rather than leaving a no-op change in the diff.
+
+## Screenshots are the long pole — scope them first
+
+Capture is routinely the largest, least predictable chunk of a release, and the estimate swings by an order of magnitude on facts you can check in two minutes. Before quoting any timeline:
+
+- Is there a web bundle? No `react-native-web` ⇒ every screen is a live-simulator capture. (`capturing-store-screenshots-live`)
+- Are the marketed screens gated? ⇒ an entitled account, plus seeded state per account, per platform.
+- How much state does each screen need? A saved-search list or a valuation result must be *built through the UI* every time.
+- Both platforms? Roughly double, and Android reload cycles are slow.
+
+Say which of these apply up front. Discovering them one at a time mid-run reads as thrashing.
 
 ## Resuming later
 

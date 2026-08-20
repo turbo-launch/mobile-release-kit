@@ -25,6 +25,18 @@
  *  - One consistent background SYSTEM across the set; make the most exciting
  *    frame (live gameplay / hero) the most saturated via a per-screen `tone`.
  *  - Optional energy "pop" chip (big number / rank / %) over the device corner.
+ *  - Optional "popout": a region of the raw (e.g. one card) re-rendered as an
+ *    enlarged floating panel that breaks the device edge — the classic
+ *    "UI element popped out of the screen" store shot. Per screen:
+ *      "popout": { "crop": [x,y,w,h],   // region of the RAW png. Values <= 1 are
+ *                                        // fractions of the raw's size (device-independent
+ *                                        // — survives different capture resolutions);
+ *                                        // values > 1 are raw pixels.
+ *                  "width": 0.55,        // panel width as fraction of canvas
+ *                  "left": 0.50, "top": 0.42,  // panel position, canvas fractions (negative = bleed)
+ *                  "rotate": -3, "radius": 0.05 }  // optional: degrees, corner radius as fraction of panel width
+ *    Per-device tweaks (raw layouts shift between capture devices): add a
+ *    "popout@<device-key>" object on the screen — it shallow-merges over "popout".
  */
 const { chromium } = require('playwright');
 const fs = require('fs');
@@ -85,24 +97,29 @@ function toneCss(cfg, toneName) {
   /* forest / default */     return { bg: `radial-gradient(70% 50% at 18% 8%,rgba(0,0,0,0) 0%,rgba(0,0,0,0) 60%),linear-gradient(155deg,${ground} 0%,${ground} 42%,${ground2} 100%)`, text, eye: '#E7B58C', eyeLine: accent };
 }
 
-function buildHTML(cfg, dev, screen, imgDataUri) {
+function buildHTML(cfg, dev, screen, imgDataUri, rawSz) {
   const t = toneCss(cfg, screen.tone || cfg.defaultTone || 'forest');
   const font = cfg.fontFamily || '-apple-system,"SF Pro Display","Helvetica Neue",Arial,sans-serif';
   const watermark = cfg.watermark || '';
 
   // Feature graphic: landscape banner, no device chassis — background + headline.
+  // Optional per-screen "logo" (path, resolved against the config dir) renders a
+  // wordmark image above the headline instead of the text eyebrow.
   if (dev.kind === 'graphic') {
-    const fg = Math.round(dev.h * 0.18);  // ~90px headline on a 500px-tall banner
+    // headScale lets a longer headline shrink to fit without a new device entry.
+    const fg = Math.round(dev.h * 0.18 * (screen.headScale || 1));  // ~90px headline on a 500px-tall banner
     const eg = Math.round(dev.h * 0.05);
+    const logoH = Math.round(dev.h * 0.22);
     return `<!doctype html><html><head><meta charset="utf-8"><style>
     *{margin:0;padding:0;box-sizing:border-box;}
     html,body{width:${dev.w}px;height:${dev.h}px;overflow:hidden;}
     .stage{position:relative;width:${dev.w}px;height:${dev.h}px;background:${t.bg};font-family:${font};
       display:flex;flex-direction:column;justify-content:center;padding:0 ${Math.round(dev.w * 0.08)}px;overflow:hidden;}
     .eyebrow{color:${t.eye};font-size:${eg}px;font-weight:800;letter-spacing:5px;margin-bottom:14px;}
+    .logo{height:${logoH}px;width:auto;align-self:flex-start;margin-bottom:${Math.round(dev.h * 0.03)}px;}
     .head{color:${t.text};font-size:${fg}px;font-weight:800;line-height:1.0;letter-spacing:-1.5px;white-space:pre-line;}
     </style></head><body><div class="stage">
-      ${screen.eyebrow ? `<div class="eyebrow">${esc(screen.eyebrow)}</div>` : ''}
+      ${screen._logoDataUri ? `<img class="logo" src="${screen._logoDataUri}"/>` : (screen.eyebrow ? `<div class="eyebrow">${esc(screen.eyebrow)}</div>` : '')}
       <div class="head">${esc(screen.head)}</div>
     </div></body></html>`;
   }
@@ -133,6 +150,28 @@ function buildHTML(cfg, dev, screen, imgDataUri) {
 
   const wmHTML = watermark ? `<div class="wm">${watermark}</div>` : '';
 
+  // Popout: crop a region of the raw and float it, enlarged, over the device
+  // edge. Pure CSS crop — the full raw goes in an overflow:hidden panel with a
+  // negative offset, so no image processing is needed.
+  let poHTML = '';
+  const poOverride = dev._key ? screen['popout@' + dev._key] : null;
+  const po = (screen.popout || poOverride) ? { ...(screen.popout || {}), ...(poOverride || {}) } : null;
+  if (po && Array.isArray(po.crop) && po.crop.length === 4 && rawSz) {
+    let [cx, cy, cw, ch] = po.crop;
+    if (cx <= 1 && cy <= 1 && cw <= 1 && ch <= 1) {
+      cx *= rawSz.w; cy *= rawSz.h; cw *= rawSz.w; ch *= rawSz.h;
+    }
+    const poW = Math.round(dev.w * (po.width || 0.55));
+    const scale = poW / cw;
+    const poH = Math.round(ch * scale);
+    const left = Math.round(dev.w * (po.left != null ? po.left : 0.50));
+    const top = Math.round(dev.h * (po.top != null ? po.top : 0.42));
+    const rad = Math.round(poW * (po.radius != null ? po.radius : 0.05));
+    poHTML = `<div class="popout" style="left:${left}px;top:${top}px;width:${poW}px;height:${poH}px;border-radius:${rad}px;transform:rotate(${po.rotate || 0}deg)">
+      <img src="${imgDataUri}" style="width:${Math.round(rawSz.w * scale)}px;left:${-Math.round(cx * scale)}px;top:${-Math.round(cy * scale)}px"/>
+    </div>`;
+  }
+
   return `<!doctype html><html><head><meta charset="utf-8"><style>
   *{margin:0;padding:0;box-sizing:border-box;}
   html,body{width:${dev.w}px;height:${dev.h}px;overflow:hidden;}
@@ -148,10 +187,13 @@ function buildHTML(cfg, dev, screen, imgDataUri) {
   .pop{position:absolute;z-index:4;right:${isTablet ? dev.w * 0.10 : dev.w * 0.05}px;top:${dev.h * 0.30}px;width:${isTablet ? 250 : small ? 180 : 205}px;height:${isTablet ? 250 : small ? 180 : 205}px;border-radius:50%;background:var(--pc);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 24px 50px rgba(0,0,0,0.35),inset 0 0 0 ${isTablet ? 8 : 6}px rgba(255,255,255,0.18);transform:rotate(-8deg);}
   .pop-big{color:#fff;font-size:${isTablet ? 90 : small ? 64 : 76}px;font-weight:900;letter-spacing:-2px;line-height:1;}
   .pop-sub{color:rgba(255,255,255,0.92);font-size:${isTablet ? 24 : 20}px;font-weight:800;letter-spacing:2px;margin-top:6px;}
+  .popout{position:absolute;z-index:5;overflow:hidden;background:#fff;box-shadow:0 30px 70px rgba(0,0,0,0.45),0 6px 18px rgba(0,0,0,0.25);}
+  .popout img{position:absolute;display:block;}
   </style></head><body><div class="stage">
     ${wmHTML}
     <div class="copy"><div class="eyebrow">${esc(screen.eyebrow)}</div><div class="head">${esc(screen.head)}</div></div>
     <div class="device-wrap"><div class="chassis"><div class="screen"><img src="${imgDataUri}"/></div></div></div>
+    ${poHTML}
     ${popHTML}
   </div></body></html>`;
 }
@@ -165,6 +207,7 @@ function buildHTML(cfg, dev, screen, imgDataUri) {
   const devices = { ...DEFAULT_DEVICES, ...(cfg.devices || {}) };
   const dev = devices[deviceKey];
   if (!dev) die(`unknown device "${deviceKey}". Known: ${Object.keys(devices).join(', ')}`);
+  dev._key = deviceKey; // exposed to buildHTML for per-device screen overrides
   // The feature graphic has no device screen, so it doesn't read raws.
   if (dev.kind !== 'graphic' && !fs.existsSync(rawDir)) die(`rawDir not found: ${rawDir}`);
   fs.mkdirSync(outDir, { recursive: true });
@@ -176,6 +219,12 @@ function buildHTML(cfg, dev, screen, imgDataUri) {
   for (const key of cfg.order) {
     const screen = cfg.screens[key];
     if (!screen) { skipped.push(`${key} (no config.screens entry)`); continue; }
+    // Resolve an optional logo image (feature graphic) relative to the config file.
+    if (screen.logo && !screen._logoDataUri) {
+      const lp = path.resolve(path.dirname(configPath), screen.logo);
+      if (fs.existsSync(lp)) screen._logoDataUri = 'data:image/png;base64,' + fs.readFileSync(lp).toString('base64');
+      else console.warn(`  ⚠ ${key}: logo not found at ${lp} — falling back to text eyebrow.`);
+    }
     // Resolve the raw image: <key>.png, or a per-device/per-screen fallback list.
     let src = path.join(rawDir, key + '.png');
     if (!fs.existsSync(src) && screen.fallback) {
@@ -187,11 +236,13 @@ function buildHTML(cfg, dev, screen, imgDataUri) {
     if (dev.kind !== 'graphic' && !fs.existsSync(src)) { skipped.push(`${key} (no raw png in ${rawDir})`); continue; }
 
     let imgDataUri = '';
+    let rawSz = null;
     if (dev.kind !== 'graphic') {
       // Warn if the raw's aspect ratio is far from the device's, or it's tiny —
       // the chassis stretches the <img> to fit, so a wrong-shape/low-res raw
       // ships distorted with no error otherwise.
       const sz = pngSize(src);
+      rawSz = sz;
       if (sz) {
         const rawAR = sz.w / sz.h, devAR = dev.w / dev.h;
         if (Math.abs(rawAR - devAR) / devAR > 0.12) {
@@ -203,7 +254,7 @@ function buildHTML(cfg, dev, screen, imgDataUri) {
       }
       imgDataUri = 'data:image/png;base64,' + fs.readFileSync(src).toString('base64');
     }
-    await page.setContent(buildHTML(cfg, dev, screen, imgDataUri), { waitUntil: 'networkidle' });
+    await page.setContent(buildHTML(cfg, dev, screen, imgDataUri, rawSz), { waitUntil: 'networkidle' });
     n++;
     const out = path.join(outDir, String(n).padStart(2, '0') + '-' + key + '.png');
     await page.screenshot({ path: out, clip: { x: 0, y: 0, width: dev.w, height: dev.h } });

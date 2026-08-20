@@ -37,8 +37,19 @@ Listing copy that fits the stores' limits and passes review. Pair with `releasin
 App Review **will reject** if demo credentials don't work. Include:
 
 - A demo / review account whose creds are **verified working in production** (phone+OTP, or email+password).
-- For any gated content (PIN to join, invite code, paid tier), give the reviewer exactly how to reach it — they won't create their own.
+- For any gated content (PIN to join, invite code, paid tier), give the reviewer exactly how to reach it — they won't create their own. Spell out the tap path (`Settings → "Sign in with email" → …`), not just the credentials; a reviewer who can't find the login treats the feature as broken.
 - A short note for non-obvious permissions ("Camera prompt appears only after tapping Scan QR, never at launch").
+- Name the gated surfaces explicitly, and say that the free-tier fallback is **intended behavior** — otherwise a reviewer who sees "we can't price this car" reads it as an error and rejects.
+
+### Anonymous-first ≠ no credentials needed
+
+The trap: the app genuinely works without login, so the notes say *"No demo account required — everything works anonymously."* Meanwhile the **screenshots** show the paid features, because those are the ones worth marketing. The reviewer taps them, hits the free-tier wall, and rejects for "could not review the functionality shown in your screenshots."
+
+Rule: **whatever the screenshots depict must be reachable with what the review notes provide.** Reconcile the notes against the final screenshot set at the end, after captures are locked — not while drafting. Phrase it as *"not required to browse, but here are credentials for the PRO surfaces"*, and list which screens those are.
+
+On Play the same information belongs in **App content → App access**: answer "all functionality available without special access" = **No** and attach an instruction set with the credentials and steps. Leaving it at "Yes" while shipping gated screenshots is a policy rejection.
+
+If the entitlement was granted server-side (as it must be when the binary carries no purchase surface), say so — "PRO granted server-side on this account; nothing is purchased in or out of the app" — so it doesn't read as an undeclared IAP.
 
 ## Release notes ("What's New")
 

@@ -34,10 +34,11 @@
   },
 
   "devices": {
-    "_note": "Built-in keys: iphone-6.9, iphone-6.5, ipad-13, android-phone, android-tablet. Add or override here. 'kind' is phone|tablet (controls proportions). Per-screen 'fallback' lets a device reuse another raw, e.g. ipad reusing a teacher screen for a student-only live frame.",
+    "_note": "Built-in keys: iphone-6.9, iphone-6.5, ipad-13, android-phone, android-tablet. Add or override here — but note anything you list here OVERRIDES the built-in, so a wrong number silently ships. 'kind' is phone|tablet (controls proportions). Per-screen 'fallback' lets a device reuse another raw, e.g. ipad reusing a teacher screen for a student-only live frame.",
+    "_android_note": "android-phone MUST stay 1080x1920. Play rejects aspect ratios steeper than 2:1, so 1080x2400 (20:9) fails at upload even though it's the natural emulator raw size. The 1080x2400 raws are capture INPUTS; the framer letterboxes them into 1080x1920 and warns about the aspect gap — that warning is expected on Android, not a bug.",
     "iphone-6.9":     { "w": 1320, "h": 2868, "kind": "phone" },
     "ipad-13":        { "w": 2064, "h": 2752, "kind": "tablet" },
-    "android-phone":  { "w": 1080, "h": 2400, "kind": "phone" },
+    "android-phone":  { "w": 1080, "h": 1920, "kind": "phone" },
     "android-tablet": { "w": 1600, "h": 2560, "kind": "tablet" }
   }
 }

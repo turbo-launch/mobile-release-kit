@@ -35,7 +35,67 @@ eas whoami && eas project:info          # confirm account/project
 eas build --platform all --profile production
 ```
 
-Prints an `.ipa` and an `.aab` URL — **note both build IDs** (`eas build:list --limit 2` if you lose them). Submit by ID, not `--latest`: `--latest` is per-platform and grabs whatever finished last, which can be a *stale or failed* build if the run errored partway. If a build fails on a missing env var, set it with `eas env:create --environment production` and re-run.
+Prints an `.ipa` and an `.aab` URL — **note both build IDs** (`eas build:list --limit 2` if you lose them). Submit by ID, not `--latest`: `--latest` is per-platform and grabs whatever finished last, which can be a *stale or failed* build if the run errored partway. If a build fails on a missing env var, set it with `eas env:set --environment production --name N --value V --visibility plaintext --type string --non-interactive` and re-run (`env:create` is deprecated; there is no `--force` — `env:set` upserts).
+
+## 1b. Gate the artifact — a signed build can be completely inert
+
+**Do this before every upload.** A store build that installs, launches, and reaches
+nothing is indistinguishable from a healthy one until a user opens it.
+
+`babel-preset-expo` inlines `EXPO_PUBLIC_*` by **static substitution** of literal
+`process.env.EXPO_PUBLIC_FOO` member expressions. Anything computed is invisible to it:
+
+```ts
+const get = (k: string) => process.env[k] ?? '';    // ← inlines NOTHING
+const { EXPO_PUBLIC_API_BASE_URL } = process.env;    // ← also nothing
+baseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? ''  // ← the only correct shape
+```
+
+The reason it reaches production: **Metro populates `process.env` at runtime**, so a
+dynamic read works in dev, on a dev client, and in Expo Go, and fails only in a release
+bundle where `process.env` is empty — the one build nobody runs before submitting. A real
+release shipped this way; the app had no backend URL at all.
+
+```bash
+# Hermes bytecode is BINARY. Plain `grep -c` returns 0 whether the string is present or
+# absent, because BSD grep short-circuits on binary input. Without -a the check cannot
+# fail correctly, which is worse than no check at all.
+B=$(mktemp); unzip -p build-*.ipa 'Payload/*.app/main.jsbundle' > "$B"
+grep -ac '<api host>'               "$B"   # expect >= 1
+grep -ac 'EXPO_PUBLIC_API_BASE_URL' "$B"   # expect 0
+rm -f "$B"
+```
+
+Read the pair; the second line is the diagnosis:
+
+| value | var name | verdict |
+|---|---|---|
+| present | absent | inlined — ship it |
+| absent | **present** | computed access — nothing inlined, binary has no backend |
+| absent | absent | env absent at build time — check the profile's `environment` + `eas env:list` |
+
+**EAS env vars only reach a build whose profile declares an environment.** A profile with
+no `"environment"` key gets none of them, silently:
+
+```json
+"production": { "autoIncrement": true, "channel": "production", "environment": "production" }
+```
+
+Seconds-long loop instead of a native rebuild, same transform:
+
+```bash
+set -a; . ./.env; set +a
+bunx expo export --platform ios --output-dir /tmp/envcheck --no-minify
+grep -ac '<api host>' /tmp/envcheck/_expo/static/js/ios/*.hbc
+```
+
+And assert the plist — a duplicate build number is rejected at upload, and a missing
+encryption key means export-compliance paperwork on every single submission:
+
+```bash
+unzip -p build-*.ipa 'Payload/*.app/Info.plist' | plutil -p - \
+  | grep -E 'CFBundleIdentifier|CFBundleShortVersionString|CFBundleVersion|NonExempt'
+```
 
 ## 2. App Store
 
