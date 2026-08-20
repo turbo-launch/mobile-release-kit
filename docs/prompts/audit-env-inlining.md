@@ -61,6 +61,9 @@ symptom was an app that installed, launched, and reached nothing.
 >    grep -ac '<a value that must be present>' "$B"   # expect >= 1
 >    grep -ac 'EXPO_PUBLIC_API_BASE_URL'       "$B"   # expect 0
 >    ```
+>    Or use the kit's script, which does all of this plus the `app.config` asset and
+>    distinct exit codes: `./scripts/verify-release-artifact.sh <artifact>`
+>
 >    `-a` is mandatory: Hermes output is binary, and plain `grep -c` returns 0 whether
 >    the string is present or not because BSD grep short-circuits on binary input. A
 >    check without `-a` cannot fail correctly, which is worse than no check.

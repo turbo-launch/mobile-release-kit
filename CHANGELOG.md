@@ -23,6 +23,8 @@ All notable changes to this project are documented here. Format loosely follows
 - `releasing-with-eas`: build profiles receive EAS environment variables only when the profile declares `"environment"`; without it a production build silently gets none.
 - `docs/prompts/audit-env-inlining.md`: a portable, self-contained prompt to audit any Expo app for the same defect, with the equivalent breakage in Vite / Next.js / CRA.
 
+- `scripts/verify-release-artifact.sh` + `/verify-artifact` command + a warn-only PreToolUse hook on upload commands (`altool --upload-app`, `eas submit`, `iTMSTransporter`, `fastlane supply`). Derives what to assert from the project's env file, so it needs no per-project config, and searches BOTH places a build-time value can land: the JS bundle (`EXPO_PUBLIC_*` inlined by Babel) and the Expo `app.config` asset (values passed through `extra` from `app.config.ts`, which never appear in the bundle). Distinct exit codes — `0` pass, `1` a value missing, `2` could not inspect — so a broken invocation cannot masquerade as a pass. `--optional` exempts vars that live in the env file but are legitimately unused by the native app.
+
 ### Fixed
 - Android phone default `1080×2400` → `1080×1920` (1080×2400 exceeds Google Play's 1:2–2:1 aspect cap and is rejected at upload).
 - **Same fix carried into `templates/frames.config.json` and `framing-store-screenshots/SKILL.md`**, which still said `1080×2400`. The template mattered most: a project config's `devices` block *overrides* the built-in, so copying the template re-introduced the rejected size silently. Both now note that the aspect-mismatch warning on Android is expected, not a defect.

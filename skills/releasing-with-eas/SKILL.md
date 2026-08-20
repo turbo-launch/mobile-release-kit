@@ -56,15 +56,20 @@ dynamic read works in dev, on a dev client, and in Expo Go, and fails only in a 
 bundle where `process.env` is empty — the one build nobody runs before submitting. A real
 release shipped this way; the app had no backend URL at all.
 
+Use the bundled script rather than ad-hoc greps — it checks every var in the env file,
+searches both places a value can land (JS bundle *and* the Expo `app.config` asset, since
+`extra`-delivered values never appear in the bundle), and separates "could not inspect"
+from "pass":
+
 ```bash
-# Hermes bytecode is BINARY. Plain `grep -c` returns 0 whether the string is present or
-# absent, because BSD grep short-circuits on binary input. Without -a the check cannot
-# fail correctly, which is worse than no check at all.
-B=$(mktemp); unzip -p build-*.ipa 'Payload/*.app/main.jsbundle' > "$B"
-grep -ac '<api host>'               "$B"   # expect >= 1
-grep -ac 'EXPO_PUBLIC_API_BASE_URL' "$B"   # expect 0
-rm -f "$B"
+./scripts/verify-release-artifact.sh <artifact>   # .ipa | .aab | .apk, auto-detected
+#   --env-file .env   --prefix EXPO_PUBLIC_   --var NAME   --optional NAME
 ```
+
+Exit `0` all-pass · `1` a value missing — **do not upload** · `2` could not inspect,
+deliberately not a pass. `--optional` downgrades a var that lives in the env file but is
+legitimately unused by the native app (a web-only OAuth redirect, say) — explicit, so
+every exemption is visible in the command.
 
 Read the pair; the second line is the diagnosis:
 
