@@ -12,8 +12,6 @@ All notable changes to this project are documented here. Format loosely follows
 - `feature-graphic` render mode (1024×500 Play banner, no device chassis).
 - `release-notes.txt` template; localization workflow in `writing-store-listings`.
 - CI: GitHub Actions workflow + zero-dependency validators (`validate-kit.js`, `test-mcp-boot.js`).
-
-### Added
 - `popout` render mode: a region of the raw re-rendered as an enlarged panel breaking the device edge (the "card lifted off the screen" hero shot), with fraction-based crops and `popout@<device-key>` per-device overrides.
 - `logo` (PNG wordmark replacing the text eyebrow) and `headScale` (shrink a long headline without a bespoke device entry) screen options.
 - `capturing-store-screenshots-live`: full Android emulator workflow — `adb exec-out screencap`, SystemUI demo mode, pointing a debug APK at a custom Metro via `debug_http_host`, and the Android-specific traps (stale embedded bundle, ANR on dev-bundle reload, edge-to-edge status bar, Hermes locale fallback).
@@ -21,7 +19,6 @@ All notable changes to this project are documented here. Format loosely follows
 - `capturing-store-screenshots-live`: gated-feature capture — server-side entitlement, stale `/me` after login, and the account switch that empties anonymously-seeded favorites.
 - `writing-store-listings`: "anonymous-first ≠ no credentials needed" — reconcile review notes against the final screenshot set, and Play's App content → App access declaration.
 - `driving-a-release`: scope screenshots before quoting a timeline; log capture-time app defects as findings rather than fixing them inline.
-
 - `releasing-with-eas`: §1b artifact gate — grep the release bundle for a value that must be in it, before uploading. Covers the `EXPO_PUBLIC_*` static-inlining rule (a computed `process.env[key]` inlines nothing and fails only in release, because Metro populates `process.env` at runtime), the binary-grep trap (`grep -c` on Hermes bytecode returns 0 either way; `-a` is mandatory), the value/name truth table, the `expo export` fast loop, and the plist assertions.
 - `releasing-with-eas`: build profiles receive EAS environment variables only when the profile declares `"environment"`; without it a production build silently gets none.
 - `docs/prompts/audit-env-inlining.md`: a portable, self-contained prompt to audit any Expo app for the same defect, with the equivalent breakage in Vite / Next.js / CRA.
