@@ -13,7 +13,8 @@
 # non-inlinable read.
 #
 #   ./verify-release-artifact.sh [artifact] [--env-file .env] [--prefix EXPO_PUBLIC_]
-#                               [--var NAME]... [--quiet]
+#                               [--var NAME]... [--string TEXT]... [--absent TEXT]...
+#                               [--quiet]
 #
 #   artifact     .ipa | .aab | .apk. Auto-detected from the cwd when omitted.
 #   --env-file   defaults to .env
@@ -24,6 +25,15 @@
 #                live in the env file but are legitimately not consumed by the native
 #                app — e.g. web-only OAuth redirect URIs. Explicit by design: the gate
 #                stays failing-by-default, and every exemption is visible in the command.
+#   --string     assert this literal text IS in the bundle (repeatable). For localized
+#                copy or a feature string the env check knows nothing about.
+#   --absent     assert this literal text is NOT in the bundle (repeatable). Use for
+#                '192.168' and 'localhost' — a LAN URL baked in from local testing is
+#                invisible to every other check here.
+#
+#   Non-ASCII is handled: Hermes stores such strings as UTF-16, so a UTF-8 grep reports
+#   absent on a bundle that contains them. Every search falls back to the UTF-16LE
+#   encoding before concluding a string is missing.
 #
 # Exit codes — deliberately distinct, so a broken invocation cannot look like a pass:
 #   0  every checked value present, no leaked names
@@ -32,6 +42,7 @@
 set -uo pipefail
 
 ARTIFACT=""; ENV_FILE=".env"; PREFIX="EXPO_PUBLIC_"; QUIET=0; VARS=(); OPTIONAL=()
+PRESENT=(); ABSENT=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -39,8 +50,10 @@ while [ $# -gt 0 ]; do
     --prefix)   PREFIX="${2-}"; shift 2 ;;
     --var)      VARS+=("${2:?--var needs a name}"); shift 2 ;;
     --optional) OPTIONAL+=("${2:?--optional needs a name}"); shift 2 ;;
+    --string)   PRESENT+=("${2:?--string needs text}"); shift 2 ;;
+    --absent)   ABSENT+=("${2:?--absent needs text}"); shift 2 ;;
     --quiet)    QUIET=1; shift ;;
-    -h|--help)  sed -n '2,28p' "$0"; exit 0 ;;
+    -h|--help)  sed -n '2,38p' "$0"; exit 0 ;;
     -*)         echo "unknown flag: $1" >&2; exit 2 ;;
     *)          ARTIFACT="$1"; shift ;;
   esac
@@ -101,6 +114,29 @@ fi
 [ "${#VARS[@]}" -gt 0 ] || die2 "no variables matched prefix '${PREFIX}' in $ENV_FILE"
 
 # ------------------------------------------------------------------- checks
+# Count occurrences of a literal string, seeing through Hermes' string encoding.
+#
+# Hermes keeps non-ASCII in its string table as UTF-16, so `grep -aF` for 'Sərfəli'
+# returns 0 on a bundle that genuinely contains it — every ASCII string matches and
+# every string with an accented letter does not. That false negative once nearly got a
+# good build thrown away and rebuilt. Only pay the (expensive) hex scan when the needle
+# actually contains non-ASCII and the plain search already came back empty.
+has_string() {
+  local needle="$1" file="$2" c u16
+  c=$(grep -aFc -- "$needle" "$file" 2>/dev/null); c=${c:-0}
+  if [ "$c" -eq 0 ]; then
+    case "$needle" in
+      *[!\ -~]*)
+        u16=$(printf '%s' "$needle" | iconv -f UTF-8 -t UTF-16LE 2>/dev/null | xxd -p | tr -d '\n')
+        if [ -n "$u16" ]; then
+          c=$(xxd -p "$file" | tr -d '\n' | grep -c "$u16" 2>/dev/null); c=${c:-0}
+        fi
+        ;;
+    esac
+  fi
+  printf '%s' "$c"
+}
+
 is_optional() { local q="$1" o; for o in ${OPTIONAL+"${OPTIONAL[@]}"}; do [ "$o" = "$q" ] && return 0; done; return 1; }
 
 fail=0; skipped=0; checked=0; warned=0
@@ -124,8 +160,8 @@ for name in "${VARS[@]}"; do
   # any character and produce false positives.
   # No `|| echo 0`: `grep -c` already prints 0 and merely exits 1 on no match, so the
   # fallback would append a second line and break the integer comparisons below.
-  vb=$(grep -aFc -- "$value" "$BUNDLE" 2>/dev/null); vb=${vb:-0}
-  vc=$(grep -aFc -- "$value" "$CONFIG" 2>/dev/null); vc=${vc:-0}
+  vb=$(has_string "$value" "$BUNDLE"); vb=${vb:-0}
+  vc=$(has_string "$value" "$CONFIG"); vc=${vc:-0}
   # The NAME is only meaningful in the JS bundle: app.config legitimately contains
   # config keys, and a name there says nothing about Babel inlining.
   n=$(grep -aFc -- "$name" "$BUNDLE" 2>/dev/null); n=${n:-0}
@@ -144,6 +180,27 @@ for name in "${VARS[@]}"; do
   printf '%-38s %-9s %-9s %s\n' "$name" "$where" "$n" "$verdict"
 done
 
+# ------------------------------------------------- explicit string assertions
+# The env check only knows about variables. Localized copy, a feature string, or a LAN
+# address leaked from local testing are all invisible to it.
+if [ "${#PRESENT[@]}" -gt 0 ] || [ "${#ABSENT[@]}" -gt 0 ]; then
+  say ""
+  printf '%-46s %-7s %s\n' "STRING" "COUNT" "VERDICT"
+  printf '%-46s %-7s %s\n' "------" "-----" "-------"
+fi
+for needle in ${PRESENT+"${PRESENT[@]}"}; do
+  c=$(has_string "$needle" "$BUNDLE")
+  if [ "$c" -ge 1 ]; then verdict="ok"
+  else verdict="FAIL — expected in the bundle, not found"; fail=$((fail+1)); fi
+  printf '%-46s %-7s %s\n' "$needle" "$c" "$verdict"
+done
+for needle in ${ABSENT+"${ABSENT[@]}"}; do
+  c=$(has_string "$needle" "$BUNDLE")
+  if [ "$c" -eq 0 ]; then verdict="ok (absent)"
+  else verdict="FAIL — must NOT be in a release build"; fail=$((fail+1)); fi
+  printf '%-46s %-7s %s\n' "$needle" "$c" "$verdict"
+done
+
 # --------------------------------------------------------- iOS plist assertions
 if [ "${ARTIFACT##*.}" = "ipa" ]; then
   say ""
@@ -160,7 +217,7 @@ fi
 
 say ""
 if [ "$fail" -gt 0 ]; then
-  say "FAIL — $fail of $checked checked variable(s) did not make it into the binary."
+  say "FAIL — $fail check(s) failed across $checked variable(s) and $(( ${#PRESENT[@]} + ${#ABSENT[@]} )) string assertion(s)."
   say "       Do not upload. See docs/prompts/audit-env-inlining.md."
   exit 1
 fi

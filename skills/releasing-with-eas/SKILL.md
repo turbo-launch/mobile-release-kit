@@ -10,6 +10,14 @@ Build and submit an Expo app to both stores. The publish is a **documented human
 
 **Never run `eas build` / `eas submit` without explicit human confirmation** — they are billed and outward-facing.
 
+**A binary that reads a new server field must ship AFTER that field deploys.** Build first and the app compiles, installs, runs — and the feature is silently gone, because the field comes back `undefined` and a `?? null` fallback reads as "nothing to show". The build is green and nobody notices until the numbers are wrong. Deploy the backend, verify against production, *then* build — as a command in the runbook, not a sentence:
+
+```bash
+curl -s "https://<api>/<endpoint>" | grep -q '<new_field>' && echo OK
+```
+
+Record the prereq in `CHANGELOG.md` next to the build number, and mark any binary built before that deploy as **superseded — do not submit**. Build artifacts outlive memory, and the bad one looks exactly like the good one.
+
 For a guided, resumable run that tracks state across a multi-day release, use the **driving-a-release** skill — it generates a `RELEASE-CHECKLIST.md` and walks it. This skill is the reference for *what* each step does.
 
 ## Checklist
@@ -86,6 +94,20 @@ no `"environment"` key gets none of them, silently:
 "production": { "autoIncrement": true, "channel": "production", "environment": "production" }
 ```
 
+Assert arbitrary strings too — the env check knows nothing about localized copy, and nothing about a LAN address left over from device testing:
+
+```bash
+./scripts/verify-release-artifact.sh build.ipa \
+    --string 'Sərfəli' --absent '192.168' --absent 'localhost'
+```
+
+> **`grep -a` is necessary but not sufficient.** Bare `grep -c` short-circuits on binary input and returns 0 whether the string is there or not — a check that cannot fail, recorded as a pass. And `-a` still misses non-ASCII: **Hermes stores such strings as UTF-16**, so a UTF-8 grep reports absent on a bundle that contains them. Four localized strings once came back "missing" from a perfectly good build that was nearly rebuilt over it. The script searches the UTF-16LE encoding as a fallback; by hand it is:
+>
+> ```bash
+> u16=$(printf '%s' 'Sərfəli' | iconv -f UTF-8 -t UTF-16LE | xxd -p | tr -d '\n')
+> xxd -p "$BUNDLE" | tr -d '\n' | grep -c "$u16"     # expect >= 1
+> ```
+
 Seconds-long loop instead of a native rebuild, same transform:
 
 ```bash
@@ -101,6 +123,54 @@ encryption key means export-compliance paperwork on every single submission:
 unzip -p build-*.ipa 'Payload/*.app/Info.plist' | plutil -p - \
   | grep -E 'CFBundleIdentifier|CFBundleShortVersionString|CFBundleVersion|NonExempt'
 ```
+
+## 1c. Alternative route — build locally, upload with `altool`
+
+`eas build --local` runs the same build on your machine: **nothing is billed**, and EAS is
+still used for signing credentials and, with `appVersionSource: remote`, for the build
+number. Run each platform **interactively the first time** — EAS has to create the iOS
+distribution certificate and the Android upload keystore, and it prompts.
+
+```bash
+bunx eas-cli build --platform ios --profile production --local --output build.ipa
+```
+
+> **A fixed `--output` path silently destroys the previous artifact.** No prompt, and with
+> `autoIncrement` the replaced build number is already spent — so the overwritten binary is
+> unrecoverable, and if it was uploaded, a stale build sits in TestFlight looking identical
+> to the good one. Before building, check whether the file exists and who made it.
+
+> The **Android upload keystore is unrecoverable** once the app is live on Play. Lose it and
+> you can never update that listing. Back it up outside the repo before the first upload:
+> `eas credentials` → Android → production → Keystore → Download.
+
+**Store the app-specific password in the keychain once**, then never pass it inline again:
+
+```bash
+xcrun altool --store-password-in-keychain-item ALTOOL_APP \
+    -u you@example.com -p <APP_SPECIFIC_PASSWORD>
+
+xcrun altool --upload-app -f build.ipa -t ios \
+    -u you@example.com -p @keychain:ALTOOL_APP
+```
+
+The password comes from appleid.apple.com → Sign-In and Security → App-Specific Passwords;
+a normal Apple password will not work. `-p @keychain:<item>` keeps the credential out of
+shell history, out of scrollback, and out of any transcript — the one-time `--store-password`
+command is the only place it is ever typed, so run that one yourself.
+
+**Uploading is not submitting.** The binary lands in ASC processing (~10–30 min) and appears
+in TestFlight; review submission is a separate, deliberate act.
+
+`altool` cannot query build status — that needs an ASC API key — but it can confirm the app
+record resolves:
+
+```bash
+xcrun altool --list-apps -u you@example.com -p @keychain:ALTOOL_APP
+```
+
+The listing copy and screenshots travel separately from the binary; see
+`publishing-listings-with-fastlane`.
 
 ## 2. App Store
 
