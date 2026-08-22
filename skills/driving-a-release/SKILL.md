@@ -50,6 +50,13 @@ Capture is routinely the largest, least predictable chunk of a release, and the 
 
 Say which of these apply up front. Discovering them one at a time mid-run reads as thrashing.
 
+## Ask the build route before the first build
+
+Cloud or local is not a detail — it decides where the build reads its configuration, which
+artifact you end up holding, and how it gets uploaded. Put it in the checklist as its own
+step and **ask**, even when the project looks like it always does one of them; say what it
+looks like and confirm. See `releasing-with-eas` §1.
+
 ## Resuming later
 
 Next session, the user says "continue the release" → re-read `RELEASE-CHECKLIST.md`, rebuild the live TODO from the unchecked items, and pick up at the first unchecked step. Confirm the resume point with the user before acting.

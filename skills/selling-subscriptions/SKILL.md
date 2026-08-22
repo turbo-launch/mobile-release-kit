@@ -80,7 +80,8 @@ can read it. There is no client-side hiding place — see `configuring-expo-env`
 
 `react-native-purchases` is a **native module**, so an existing build has not linked it:
 `bunx expo prebuild --clean` and rebuild. Then let the artifact gate confirm the public keys
-actually inlined (`releasing-with-eas` §1b) — an empty key means no paywall at all.
+actually inlined (the artifact gate in `releasing-with-eas`) — an empty key means no
+paywall at all.
 
 ## Entitlement is the source of truth, not the receipt
 

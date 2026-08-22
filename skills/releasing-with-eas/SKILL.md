@@ -8,7 +8,7 @@ description: >-
 
 Build and submit an Expo app to both stores. The publish is a **documented human runbook**, not CI — EAS does the build/submit; a person clicks "Submit for review." Capture + frame screenshots first (`capturing-store-screenshots-live` / `-web` → `framing-store-screenshots`) and write listing copy with `writing-store-listings`.
 
-**Never run `eas build` / `eas submit` without explicit human confirmation** — they are billed and outward-facing.
+**Never run `eas build` / `eas submit` without explicit human confirmation** — they are billed and outward-facing. **And never choose the build route on your own**: ask cloud or local every time (§1), because it changes where the build's configuration comes from and how the binary is uploaded.
 
 **A binary that reads a new server field must ship AFTER that field deploys.** Build first and the app compiles, installs, runs — and the feature is silently gone, because the field comes back `undefined` and a `?? null` fallback reads as "nothing to show". The build is green and nobody notices until the numbers are wrong. Deploy the backend, verify against production, *then* build — as a command in the runbook, not a sentence:
 
@@ -26,17 +26,42 @@ For a guided, resumable run that tracks state across a multi-day release, use th
 - [ ] 0. Pre-flight (gate on PREFLIGHT.md): version set, typecheck/lint/tests green,
         eas.json submit.production filled, EAS env secrets set, legal URLs live,
         demo/review creds VERIFIED working
-- [ ] 1. Build:   eas build --platform all --profile production   → note the two build IDs
-- [ ] 2. iOS:     eas submit --platform ios --id <ipa-build-id>   → ASC metadata
-- [ ] 3. Android: eas submit --platform android --id <aab-build-id> → Play metadata
-- [ ] 4. Post:    git tag v<version>; watch crashes; bump version
+- [ ] 1. ASK: cloud or local build? (changes config source, artifact and upload)
+- [ ] 2. Build the chosen way → note the build IDs / artifact paths
+- [ ] 3. Gate every artifact before it is uploaded — no exceptions
+- [ ] 4. iOS:     eas submit --id <build-id>   OR   xcrun altool --upload-app
+- [ ] 5. Android: eas submit --id <build-id>   OR   upload the .aab in Play Console
+- [ ] 6. Post:    git tag v<version>; watch crashes; bump version
 ```
 
 ## Version / build number
 
 `app.config.ts` (or `app.json`) `version` is the marketing version. **EAS owns the build number** when `eas.json` production has `appVersionSource: "remote"` + `autoIncrement: true` — never hand-edit `buildNumber` / `versionCode`. A rejected build re-submits with an auto-incremented number, no code change.
 
-## 1. Build
+## 1. Choose the build route — ask, every time
+
+**Never pick this silently.** The two routes differ in what they cost, where their
+configuration comes from, and how the binary gets uploaded — so the answer changes what you
+do for the rest of the release. Ask which one, every build:
+
+| | EAS cloud (`eas build`) | Local (`eas build --local`) |
+|---|---|---|
+| Cost | **billed** | free (your machine, ~15–40 min) |
+| Config source | the profile's `environment` on EAS | **the working directory's dotenv files** |
+| `.env.local` | never reaches it (git archive) | **read, and outranks `.env`** |
+| Credentials | EAS | EAS (same) — first run per platform is interactive |
+| Build number | EAS, with `appVersionSource: remote` | EAS (same) |
+| Artifact | downloaded from a URL, kept by EAS | a local path you choose — **overwritable** |
+| Upload | `eas submit` | `xcrun altool` / Play Console by hand |
+| Needs macOS for iOS | no | **yes** |
+
+If the project has a recorded default (its `ops/mobile-releases/README.md`, or a `just`
+recipe that already passes `--local`), say which it looks like and confirm — do not just
+apply it. A release is exactly the moment an unstated assumption gets expensive.
+
+Both routes then share the same **artifact gate** below, and neither may skip it.
+
+## 2a. Build on EAS (cloud)
 
 ```bash
 eas whoami && eas project:info          # confirm account/project
@@ -45,7 +70,55 @@ eas build --platform all --profile production
 
 Prints an `.ipa` and an `.aab` URL — **note both build IDs** (`eas build:list --limit 2` if you lose them). Submit by ID, not `--latest`: `--latest` is per-platform and grabs whatever finished last, which can be a *stale or failed* build if the run errored partway. If a build fails on a missing env var, set it with `eas env:set --environment production --name N --value V --visibility plaintext --type string --non-interactive` and re-run (`env:create` is deprecated; there is no `--force` — `env:set` upserts).
 
-## 1b. Gate the artifact — a signed build can be completely inert
+## 2b. Build locally
+
+Nothing is billed; EAS is still used for signing credentials and, with
+`appVersionSource: remote`, for the build number. Run each platform **interactively the
+first time** — EAS has to create the iOS distribution certificate and the Android upload
+keystore, and it prompts. **iOS requires macOS.**
+
+```bash
+bunx eas-cli build --platform ios --profile production --local --output build.ipa
+```
+
+> **A fixed `--output` path silently destroys the previous artifact.** No prompt, and with
+> `autoIncrement` the replaced build number is already spent — so the overwritten binary is
+> unrecoverable, and if it was uploaded, a stale build sits in TestFlight looking identical
+> to the good one. Before building, check whether the file exists and who made it.
+
+> The **Android upload keystore is unrecoverable** once the app is live on Play. Lose it and
+> you can never update that listing. Back it up outside the repo before the first upload:
+> `eas credentials` → Android → production → Keystore → Download.
+
+**Store the app-specific password in the keychain once**, then never pass it inline again:
+
+```bash
+xcrun altool --store-password-in-keychain-item ALTOOL_APP \
+    -u you@example.com -p <APP_SPECIFIC_PASSWORD>
+
+xcrun altool --upload-app -f build.ipa -t ios \
+    -u you@example.com -p @keychain:ALTOOL_APP
+```
+
+The password comes from appleid.apple.com → Sign-In and Security → App-Specific Passwords;
+a normal Apple password will not work. `-p @keychain:<item>` keeps the credential out of
+shell history, out of scrollback, and out of any transcript — the one-time `--store-password`
+command is the only place it is ever typed, so run that one yourself.
+
+**Uploading is not submitting.** The binary lands in ASC processing (~10–30 min) and appears
+in TestFlight; review submission is a separate, deliberate act.
+
+`altool` cannot query build status — that needs an ASC API key — but it can confirm the app
+record resolves:
+
+```bash
+xcrun altool --list-apps -u you@example.com -p @keychain:ALTOOL_APP
+```
+
+The listing copy and screenshots travel separately from the binary; see
+`publishing-listings-with-fastlane`.
+
+## 3. Gate the artifact — a signed build can be completely inert
 
 **Do this before every upload.** A store build that installs, launches, and reaches
 nothing is indistinguishable from a healthy one until a user opens it.
@@ -124,55 +197,7 @@ unzip -p build-*.ipa 'Payload/*.app/Info.plist' | plutil -p - \
   | grep -E 'CFBundleIdentifier|CFBundleShortVersionString|CFBundleVersion|NonExempt'
 ```
 
-## 1c. Alternative route — build locally, upload with `altool`
-
-`eas build --local` runs the same build on your machine: **nothing is billed**, and EAS is
-still used for signing credentials and, with `appVersionSource: remote`, for the build
-number. Run each platform **interactively the first time** — EAS has to create the iOS
-distribution certificate and the Android upload keystore, and it prompts.
-
-```bash
-bunx eas-cli build --platform ios --profile production --local --output build.ipa
-```
-
-> **A fixed `--output` path silently destroys the previous artifact.** No prompt, and with
-> `autoIncrement` the replaced build number is already spent — so the overwritten binary is
-> unrecoverable, and if it was uploaded, a stale build sits in TestFlight looking identical
-> to the good one. Before building, check whether the file exists and who made it.
-
-> The **Android upload keystore is unrecoverable** once the app is live on Play. Lose it and
-> you can never update that listing. Back it up outside the repo before the first upload:
-> `eas credentials` → Android → production → Keystore → Download.
-
-**Store the app-specific password in the keychain once**, then never pass it inline again:
-
-```bash
-xcrun altool --store-password-in-keychain-item ALTOOL_APP \
-    -u you@example.com -p <APP_SPECIFIC_PASSWORD>
-
-xcrun altool --upload-app -f build.ipa -t ios \
-    -u you@example.com -p @keychain:ALTOOL_APP
-```
-
-The password comes from appleid.apple.com → Sign-In and Security → App-Specific Passwords;
-a normal Apple password will not work. `-p @keychain:<item>` keeps the credential out of
-shell history, out of scrollback, and out of any transcript — the one-time `--store-password`
-command is the only place it is ever typed, so run that one yourself.
-
-**Uploading is not submitting.** The binary lands in ASC processing (~10–30 min) and appears
-in TestFlight; review submission is a separate, deliberate act.
-
-`altool` cannot query build status — that needs an ASC API key — but it can confirm the app
-record resolves:
-
-```bash
-xcrun altool --list-apps -u you@example.com -p @keychain:ALTOOL_APP
-```
-
-The listing copy and screenshots travel separately from the binary; see
-`publishing-listings-with-fastlane`.
-
-## 2. App Store
+## 4. App Store
 
 ```bash
 eas submit --platform ios --id <ipa-build-id>     # verify build number/commit is the one you just made
@@ -182,7 +207,7 @@ Then in App Store Connect: paste listing copy, upload `iphone-6.9` (+ `ipad-13` 
 
 **TestFlight first (recommended):** the build appears in TestFlight after processing. Internal testers (your team) can install immediately; **external** TestFlight testing needs a (lighter) Beta App Review. Smoke-test on TestFlight before promoting to the App Store submission.
 
-## 3. Google Play
+## 5. Google Play
 
 ```bash
 eas submit --platform android --id <aab-build-id>
@@ -196,7 +221,7 @@ Uploads the `.aab` to the **Internal** track (prompts for a Google service-accou
 
 Not every change needs a new build. **JS/asset-only** changes can ship over-the-air with `eas update --channel production` (the production profile's `channel` is what `eas update` targets). **You must rebuild + resubmit** for: native deps, app version bumps, config-plugin or `app.config` changes, or anything touching native code. OTA only reaches builds whose `runtimeVersion` matches the update — mismatch and the update is silently not delivered. Keep a `runtimeVersion` policy (e.g. `appVersion`) so a binary release and its OTA updates stay coupled.
 
-## 4. Post
+## 6. Post
 
 `git tag v<version> && git push origin v<version>`. Smoke-test the production build on a real device for both platforms. Watch crashes 24h. Bump `version` and create the next release folder.
 

@@ -81,7 +81,7 @@ eas env:set --environment production --name EXPO_PUBLIC_API_BASE_URL --value htt
 ## Verify against the artifact, never against the build succeeding
 
 A green build tells you nothing about this. Gate the upload instead — see
-`releasing-with-eas` §1b and `scripts/verify-release-artifact.sh`, which checks every var in
+the artifact gate in `releasing-with-eas` and `scripts/verify-release-artifact.sh`, which checks every var in
 the env file and searches both places a value can land (the JS bundle *and* the Expo
 `app.config` asset, since `extra`-delivered values never appear in the bundle).
 
