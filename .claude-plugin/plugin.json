@@ -2,8 +2,8 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "mobile-release-kit",
   "displayName": "Mobile Release Kit",
-  "version": "0.1.0",
-  "description": "Ship Expo / React Native apps to the App Store and Google Play: store-screenshot capture (live simulator + web bundle), a deliberate device-frame renderer, and an EAS release runbook with the real gotchas baked in.",
+  "version": "0.2.0",
+  "description": "Build, debug and ship Expo / React Native apps: the development loop (simulators, env, push, social sign-in, crash reporting), the money path (subscriptions), and the release itself (screenshots, listings, EAS, OTA, app review) with the real gotchas baked in.",
   "author": {
     "name": "turbo-launch",
     "url": "https://github.com/turbo-launch"
@@ -20,6 +20,12 @@
     "screenshots",
     "aso",
     "release",
-    "mobile"
+    "mobile",
+    "in-app-purchase",
+    "revenuecat",
+    "push-notifications",
+    "app-review",
+    "ota",
+    "sentry"
   ]
 }

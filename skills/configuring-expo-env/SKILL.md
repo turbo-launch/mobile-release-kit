@@ -119,6 +119,12 @@ underlying command usually gets **no env at all** and fails in a way that looks 
 bug. Run the project's own recipe, not the bare tool it wraps. The project's
 release README (`ops/mobile-releases/README.md` under its docs) should name which.
 
+## Auditing a codebase that doesn't have this plugin
+
+`docs/prompts/audit-env-inlining.md` is a self-contained, paste-anywhere version of this
+audit — it covers the same defect in Vite, Next.js and CRA, where the bundler substitutes
+`import.meta.env` / `process.env` the same way and breaks on the same computed access.
+
 ## Related
 
 - `releasing-with-eas` — the artifact gate in the release flow

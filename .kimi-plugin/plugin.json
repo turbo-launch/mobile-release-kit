@@ -1,6 +1,6 @@
 {
   "name": "mobile-release-kit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Ship Expo/RN apps to the App Store & Play Store: screenshot capture, device-frame rendering, EAS release runbooks.",
   "author": { "name": "turbo-launch" },
   "homepage": "https://github.com/turbo-launch/mobile-release-kit",

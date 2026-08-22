@@ -20,17 +20,44 @@
  *                                          limited app is absent from every other one.
  *   mobile-projects.mjs --json             machine-readable
  *
- * State: ~/.claude/mobile-release-kit/registry.json  (user scope — never inside this repo,
- * which is public and shared).
+ * State: the harness's per-plugin data directory when there is one
+ * (~/.claude/plugins/data/<plugin>-<marketplace>/registry.json), else a plain user-scope
+ * fallback. Never inside this repo, which is public, shared, and replaced wholesale on
+ * every update.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, rmdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve, basename } from 'node:path';
 import { findMobileDir, readVersion, readIdentifiers, readName } from './lib/expo-project.mjs';
 
-const STATE_DIR = join(homedir(), '.claude', 'mobile-release-kit');
+/**
+ * Where state lives.
+ *
+ * The plugin itself runs from a cache that is replaced wholesale on every update, so
+ * nothing may be written next to the scripts. Claude Code provisions a per-plugin data
+ * directory for exactly this; use it when present, and keep a plain user-scope path for
+ * running the script standalone (bunx, CI, no harness at all).
+ */
+const PLUGIN_DATA = process.env.CLAUDE_PLUGIN_DATA_DIR
+  ?? join(homedir(), '.claude', 'plugins', 'data', 'mobile-release-kit-turbo-launch');
+const LEGACY_DIR = join(homedir(), '.claude', 'mobile-release-kit');
+const STATE_DIR = existsSync(PLUGIN_DATA) ? PLUGIN_DATA : LEGACY_DIR;
 const REGISTRY = join(STATE_DIR, 'registry.json');
+
+/** One-time move from the pre-plugin-data location. Silent when there is nothing to move. */
+function migrateLegacy() {
+  const old = join(LEGACY_DIR, 'registry.json');
+  if (STATE_DIR === LEGACY_DIR || existsSync(REGISTRY) || !existsSync(old)) return;
+  try {
+    mkdirSync(STATE_DIR, { recursive: true });
+    writeFileSync(REGISTRY, readFileSync(old, 'utf8'));
+    rmSync(old);
+    try { rmdirSync(LEGACY_DIR); } catch { /* other files live there — leave it */ }
+    console.error(`(moved registry to ${REGISTRY})`);
+  } catch { /* not fatal — the old path still reads below */ }
+}
+migrateLegacy();
 
 const argv = process.argv.slice(2);
 const has = (f) => argv.includes(f);

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/turbo-launch/mobile-release-kit/actions/workflows/ci.yml/badge.svg)](https://github.com/turbo-launch/mobile-release-kit/actions/workflows/ci.yml)
 
-**Ship Expo / React Native apps to the App Store and Google Play — screenshots, listings, and the EAS submit dance, minus the trial and error.**
+**Build, debug and ship Expo / React Native apps — the development loop, the money path, and the store release, minus the trial and error.**
 
 Getting an app onto the stores is mostly undocumented friction: screenshots at the wrong pixel size, a Play submit that dies on a service-account permission, a review rejected because the demo login didn't work, framing that makes a good app look like a template. This kit packages the parts that are easy to get wrong, with the judgment calls already made.
 
@@ -147,6 +147,11 @@ You don't invoke these by name — say what you're doing and the right one loads
 | "write the store listing / review notes" | `writing-store-listings` |
 | "push the listing to App Store Connect" | `publishing-listings-with-fastlane` |
 | "ship it", "eas build/submit", "upload the build" | `releasing-with-eas` |
+| "add in-app purchases", "the paywall is empty", "nothing unlocked" | `selling-subscriptions` |
+| "Apple login fails on device", "invalid audience" | `wiring-social-sign-in` |
+| "will this pass review", "we got rejected", "Guideline 5.1.1" | `passing-app-review` |
+| "ship a JS fix without a release", "the update didn't arrive" | `shipping-ota-updates` |
+| "set up Sentry", "the stack trace is minified" | `reporting-crashes` |
 | "start a release and walk me through it" | `driving-a-release` |
 | "we just fixed X", "remember this for next time" | `capturing-what-you-learned` |
 | "which apps do I have", "what version is live" | `/…:mobile-projects` |
@@ -170,6 +175,11 @@ You don't invoke these by name — say what you're doing and the right one loads
 | Skill | `configuring-expo-env` | `EXPO_PUBLIC_*` inlining and which `.env` a build actually reads |
 | Skill | `setting-up-push-notifications` | APNs + FCM V1 wiring, and why Android needs a file *inside* the binary |
 | Skill | `capturing-what-you-learned` | Route a new lesson to the plugin or to the project — so it isn't copied into both |
+| Skill | `selling-subscriptions` | IAP/RevenueCat wiring, entitlements, the webhook, sandbox testing |
+| Skill | `wiring-social-sign-in` | Apple/Google sign-in, and the audience mismatch behind "works on web, fails on device" |
+| Skill | `passing-app-review` | Account deletion, 2.3.1/3.1.1/4.8, privacy manifest, demo creds |
+| Skill | `shipping-ota-updates` | `eas update`, runtimeVersion coupling, what can't go over the air |
+| Skill | `reporting-crashes` | Sentry + sourcemaps, so a production stack trace isn't minified |
 | Command | `/…:frame-screenshots` | One-shot framing of a screenshot folder |
 | Command | `/…:release` | Drive an interactive, resumable release with a tracked checklist |
 | Command | `/…:learn` | Capture a lesson from the session into the right layer |
@@ -229,7 +239,7 @@ Pin a tag rather than tracking the default branch, so a change here can't silent
 ```text
 mobile-release-kit/
 ├── AGENTS.md            # canonical agent instructions (CLAUDE.md/GEMINI.md point here)
-├── skills/              # the eleven skills (shared by every agent)
+├── skills/              # the sixteen skills (shared by every agent)
 ├── commands/            # /frame-screenshots, /release  (Claude/Codex/Cursor)
 ├── agents/              # release-orchestrator
 ├── hooks/               # build-artifact safety guard

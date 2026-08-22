@@ -1,5 +1,10 @@
 # Prompt — audit an Expo app for env vars that never reach the release binary
 
+> Working *inside* a project that has this plugin? Use the **configuring-expo-env** skill
+> and `scripts/verify-release-artifact.sh` instead — they carry the same rules plus the
+> artifact gate. This file exists to be pasted into a codebase that has neither, and it
+> covers the equivalent breakage in Vite / Next.js / CRA.
+
 Paste the block below into any Expo / React Native project. It is self-contained: it
 assumes no prior context and ends in a verified state rather than a claim.
 
