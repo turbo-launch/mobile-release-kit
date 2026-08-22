@@ -53,3 +53,14 @@ Say which of these apply up front. Discovering them one at a time mid-run reads 
 ## Resuming later
 
 Next session, the user says "continue the release" → re-read `RELEASE-CHECKLIST.md`, rebuild the live TODO from the unchecked items, and pick up at the first unchecked step. Confirm the resume point with the user before acting.
+
+## Closing the release
+
+Once the build is submitted, the release is not finished until what it taught you is written
+down. This is the only moment it is cheap — a week later the detail is gone and only the
+vague sense that "something about push was fiddly" survives.
+
+Run **capturing-what-you-learned** (or `/mobile-release-kit:learn`) as the last checklist
+item. It applies one test — *would this be true in a different app?* — and routes each
+lesson to the plugin or to this project accordingly. Prompt for it explicitly rather than
+waiting to be asked; nobody ever asks.

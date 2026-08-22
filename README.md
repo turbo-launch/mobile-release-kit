@@ -148,6 +148,7 @@ You don't invoke these by name — say what you're doing and the right one loads
 | "push the listing to App Store Connect" | `publishing-listings-with-fastlane` |
 | "ship it", "eas build/submit", "upload the build" | `releasing-with-eas` |
 | "start a release and walk me through it" | `driving-a-release` |
+| "we just fixed X", "remember this for next time" | `capturing-what-you-learned` |
 
 [`docs/lessons.md`](docs/lessons.md) is the *why* behind the rules these state — the mistakes that produced them, written up so the rule survives a deadline.
 
@@ -167,8 +168,10 @@ You don't invoke these by name — say what you're doing and the right one loads
 | Skill | `driving-simulators-and-devices` | `simctl`/`adb`, Maestro, and reading the crashes that never reach Metro |
 | Skill | `configuring-expo-env` | `EXPO_PUBLIC_*` inlining and which `.env` a build actually reads |
 | Skill | `setting-up-push-notifications` | APNs + FCM V1 wiring, and why Android needs a file *inside* the binary |
+| Skill | `capturing-what-you-learned` | Route a new lesson to the plugin or to the project — so it isn't copied into both |
 | Command | `/…:frame-screenshots` | One-shot framing of a screenshot folder |
 | Command | `/…:release` | Drive an interactive, resumable release with a tracked checklist |
+| Command | `/…:learn` | Capture a lesson from the session into the right layer |
 | Agent | `release-orchestrator` | Runs the whole pipeline across the skills |
 | Hook | — | (Claude Code) warns before a `git` command commits a build artifact |
 | Scripts | `frame-screenshots.js` (incl. `feature-graphic` mode), `contact-sheet.js`, `mcp-server.js`, `sim-capture.sh`, … | The standalone tools |
@@ -187,6 +190,8 @@ The kit is one of three layers, and keeping them separate is what stops the same
 | **Your project's `CLAUDE.md`/`AGENTS.md`** | One line pointing at the above | — |
 
 The test when you learn something new: **would this be true in a different app with different identifiers?** Yes → it belongs here, so every project gets it. No → it belongs in that project. When in doubt, keep it local; wrongly promoting a project quirk into a shared plugin means every project then follows it.
+
+The `capturing-what-you-learned` skill applies that test for you and writes the lesson to the right place — including the part everyone gets wrong, which is that an installed plugin runs from a **cache** whose edits are discarded on the next update. Contributions go to a clone of this repo, never to `~/.claude/plugins/cache/…`.
 
 ### Using the scripts from a justfile or CI
 
@@ -210,7 +215,7 @@ Pin a tag rather than tracking the default branch, so a change here can't silent
 ```text
 mobile-release-kit/
 ├── AGENTS.md            # canonical agent instructions (CLAUDE.md/GEMINI.md point here)
-├── skills/              # the ten skills (shared by every agent)
+├── skills/              # the eleven skills (shared by every agent)
 ├── commands/            # /frame-screenshots, /release  (Claude/Codex/Cursor)
 ├── agents/              # release-orchestrator
 ├── hooks/               # build-artifact safety guard

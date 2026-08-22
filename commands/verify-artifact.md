@@ -9,7 +9,7 @@ configuration — the failure mode is an app that opens and reaches nothing. Run
 rather than eyeballing it:
 
 ```bash
-./scripts/verify-release-artifact.sh $ARGUMENTS
+${CLAUDE_PLUGIN_ROOT}/scripts/verify-release-artifact.sh $ARGUMENTS
 ```
 
 If the project has a recipe, prefer it (it carries the project's own `--prefix` /
