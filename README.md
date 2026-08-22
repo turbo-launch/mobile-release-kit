@@ -22,7 +22,9 @@ It's a [Claude Code](https://code.claude.com) plugin **and** a set of standalone
 - [Quickstart](#quickstart) · [install in your agent](#install-in-your-agent) · [as plain scripts](#path-b--standalone-scripts) · [as an MCP server](#as-an-mcp-server)
 - [The opinionated part: framing](#the-opinionated-part-framing)
 - [Gotchas it already knows](#gotchas-it-already-knows)
+- [Which skill fires when](#which-skill-fires-when)
 - [What's in the box](#whats-in-the-box)
+- [Where knowledge lives](#where-knowledge-lives)
 - [Repository layout](#repository-layout)
 - [Scope & limitations](#scope--limitations)
 
@@ -130,6 +132,27 @@ The runbook and skills carry the fixes for the failures that bite everyone:
 
 ---
 
+## Which skill fires when
+
+You don't invoke these by name — say what you're doing and the right one loads. The map:
+
+| What you're doing | Skill |
+|---|---|
+| "run the app", "it crashed", "reset the simulator", "tap through this" | `driving-simulators-and-devices` |
+| "the app can't reach the backend", "env var undefined in the build" | `configuring-expo-env` |
+| "push isn't working", "no push token", "works on iOS not Android" | `setting-up-push-notifications` |
+| "capture store screenshots" (live/hero screens, macOS) | `capturing-store-screenshots-live` |
+| "capture store screenshots" (fast batches, CI, no simulator) | `capturing-store-screenshots-web` |
+| "make them look like a real listing" | `framing-store-screenshots` |
+| "write the store listing / review notes" | `writing-store-listings` |
+| "push the listing to App Store Connect" | `publishing-listings-with-fastlane` |
+| "ship it", "eas build/submit", "upload the build" | `releasing-with-eas` |
+| "start a release and walk me through it" | `driving-a-release` |
+
+[`docs/lessons.md`](docs/lessons.md) is the *why* behind the rules these state — the mistakes that produced them, written up so the rule survives a deadline.
+
+---
+
 ## What's in the box
 
 | Type | Name | Does |
@@ -140,6 +163,10 @@ The runbook and skills carry the fixes for the failures that bite everyone:
 | Skill | `releasing-with-eas` | EAS build → submit → review runbook (with the gotchas) |
 | Skill | `driving-a-release` | Guided, resumable release — generates a tracked `RELEASE-CHECKLIST.md`, walks it as a live TODO, stops at billed steps |
 | Skill | `writing-store-listings` | Listing copy, release notes, review notes within store limits |
+| Skill | `publishing-listings-with-fastlane` | Push listing copy + screenshots to ASC with `deliver` — metadata only, never the binary |
+| Skill | `driving-simulators-and-devices` | `simctl`/`adb`, Maestro, and reading the crashes that never reach Metro |
+| Skill | `configuring-expo-env` | `EXPO_PUBLIC_*` inlining and which `.env` a build actually reads |
+| Skill | `setting-up-push-notifications` | APNs + FCM V1 wiring, and why Android needs a file *inside* the binary |
 | Command | `/…:frame-screenshots` | One-shot framing of a screenshot folder |
 | Command | `/…:release` | Drive an interactive, resumable release with a tracked checklist |
 | Agent | `release-orchestrator` | Runs the whole pipeline across the skills |
@@ -149,18 +176,44 @@ The runbook and skills carry the fixes for the failures that bite everyone:
 
 ---
 
+## Where knowledge lives
+
+The kit is one of three layers, and keeping them separate is what stops the same lesson from being copied into five repos and then drifting apart:
+
+| Layer | Holds | Example |
+|---|---|---|
+| **This plugin** | Anything true of *any* Expo app | "Android needs `google-services.json` inside the binary" |
+| **Your project's release docs** | Identifiers, where credentials live, deploy prereqs, per-version release trees | "iOS `com.acme.app`, Android `com.acme.mobile`; review creds in 1Password" |
+| **Your project's `CLAUDE.md`/`AGENTS.md`** | One line pointing at the above | — |
+
+The test when you learn something new: **would this be true in a different app with different identifiers?** Yes → it belongs here, so every project gets it. No → it belongs in that project. When in doubt, keep it local; wrongly promoting a project quirk into a shared plugin means every project then follows it.
+
+### Using the scripts from a justfile or CI
+
+`${CLAUDE_PLUGIN_ROOT}` only exists inside an agent session, so task runners reach the scripts over git instead:
+
+```bash
+bunx github:turbo-launch/mobile-release-kit mrk-verify build.ipa \
+    --string 'Localized copy' --absent '192.168'
+bunx github:turbo-launch/mobile-release-kit mrk-frame --config frames.config.json
+```
+
+Pin a tag rather than tracking the default branch, so a change here can't silently alter your release build.
+
+---
+
 ## Repository layout
 
 ```text
 mobile-release-kit/
 ├── AGENTS.md            # canonical agent instructions (CLAUDE.md/GEMINI.md point here)
-├── skills/              # the five release skills (shared by every agent)
+├── skills/              # the ten skills (shared by every agent)
 ├── commands/            # /frame-screenshots, /release  (Claude/Codex/Cursor)
 ├── agents/              # release-orchestrator
 ├── hooks/               # build-artifact safety guard
 ├── scripts/             # frame-screenshots.js, contact-sheet.js, mcp-server.js, sim-*.sh
 ├── templates/           # frames.config.json, eas.json, listings, PUBLISH/PREFLIGHT
-├── docs/                # release-tree convention, store specs, media
+├── docs/                # lessons, release-tree convention, store specs, media
 ├── .mcp.json            # MCP server config
 ├── .claude-plugin/      # Claude Code manifest + marketplace
 ├── .codex-plugin/  .cursor-plugin/  .kimi-plugin/   # each reuses the shared ./skills/
