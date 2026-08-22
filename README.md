@@ -195,6 +195,18 @@ The test when you learn something new: **would this be true in a different app w
 
 The `capturing-what-you-learned` skill applies that test for you and writes the lesson to the right place — including the part everyone gets wrong, which is that an installed plugin runs from a **cache** whose edits are discarded on the next update. Contributions go to a clone of this repo, never to `~/.claude/plugins/cache/…`.
 
+### Commands cost tokens; the scripts don't
+
+A slash command is a **prompt**, not a script — the agent reads it, decides what to run, and
+narrates the result. That is worth paying for when the output needs judgment (reading an exit
+code, deciding whether a finding is real) and wasteful when it doesn't. For a tool that
+already prints its answer, skip the agent:
+
+```bash
+alias mrk='bunx --package github:turbo-launch/mobile-release-kit#main'
+mrk mrk-projects          # instant, zero tokens
+```
+
 ### Using the scripts from a justfile or CI
 
 `${CLAUDE_PLUGIN_ROOT}` only exists inside an agent session, so task runners reach the scripts over git instead:

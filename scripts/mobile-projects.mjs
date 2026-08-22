@@ -13,6 +13,7 @@
  *
  *   mobile-projects.mjs                    list every project (default)
  *   mobile-projects.mjs register [path]    add a project (default: cwd)
+ *                       [--country AZ]     ...and remember its storefront
  *   mobile-projects.mjs forget <name>      drop one
  *   mobile-projects.mjs --no-live          skip the store lookups (offline / fast)
  *   mobile-projects.mjs --country AZ       storefront to query (default: us). A region-
@@ -89,12 +90,21 @@ if (cmd === 'register') {
   const mobileDir = findMobileDir(target);
   if (!mobileDir) { console.error(`no Expo app under ${target} — nothing to register`); process.exit(2); }
   const name = readName(mobileDir) ?? basename(target);
-  if (d.projects.some((p) => resolve(p.path) === target)) {
-    console.log(`already registered: ${name} (${target})`);
+  const ci = argv.indexOf('--country');
+  const country = ci === -1 ? undefined : argv[ci + 1]?.toLowerCase();
+  const existing = d.projects.find((p) => resolve(p.path) === target);
+  if (existing) {
+    // Re-registering is how you correct a storefront, so let it update rather than refuse.
+    if (country && existing.country !== country) {
+      existing.country = country; save(d);
+      console.log(`updated ${existing.name} → storefront ${country.toUpperCase()}`);
+    } else {
+      console.log(`already registered: ${existing.name} (${target})`);
+    }
   } else {
-    d.projects.push({ name, path: target });
+    d.projects.push({ name, path: target, ...(country ? { country } : {}) });
     save(d);
-    console.log(`registered ${name} → ${target}`);
+    console.log(`registered ${name} → ${target}${country ? ` (${country.toUpperCase()})` : ''}`);
   }
   process.exit(0);
 }
