@@ -52,7 +52,7 @@ do for the rest of the release. Ask which one, every build:
 | Credentials | EAS | EAS (same) — first run per platform is interactive |
 | Build number | EAS, with `appVersionSource: remote` | EAS (same) |
 | Artifact | downloaded from a URL, kept by EAS | a local path you choose — **overwritable** |
-| Upload | `eas submit` | `xcrun altool` / Play Console by hand |
+| Upload | `eas submit` | `eas submit --path` (Android) · `xcrun altool` (iOS) |
 | Needs macOS for iOS | no | **yes** |
 
 If the project has a recorded default (its `ops/mobile-releases/README.md`, or a `just`
@@ -114,6 +114,37 @@ record resolves:
 ```bash
 xcrun altool --list-apps -u you@example.com -p @keychain:ALTOOL_APP
 ```
+
+### Android: `eas submit` takes a local artifact
+
+Building locally does not mean uploading by hand. **`eas submit` is a different service
+from `eas build`** — you can skip the cloud build entirely and still submit through it:
+
+```bash
+eas submit -p android --profile production --path build-<version>.aab
+```
+
+It handles the Play edit → upload → assign-to-track → commit sequence that the raw
+`androidpublisher` API makes you write yourself. Configure it once:
+
+```json
+"submit": { "production": { "android": {
+  "serviceAccountKeyPath": "/absolute/path/to/play-service-account.json",
+  "track": "internal"
+} } }
+```
+
+**Use an absolute path.** A relative one is resolved from the `eas.json` directory, so it
+differs with repo depth and silently breaks when the command runs from elsewhere — a
+"missing service account" that is really a `../` miscount.
+
+> The **Play Developer API** service account is *not* the **FCM** service account. Same
+> Google project, different grant, and swapping them fails with a permissions error that
+> reads like a Play Console problem. The publishing one needs to be invited under Play
+> Console → Users and permissions with **Release** permission for the app.
+
+`--path` works for iOS too, but `altool` above is fewer moving parts when the binary is
+already on your disk.
 
 The listing copy and screenshots travel separately from the binary; see
 `publishing-listings-with-fastlane`.
