@@ -25,8 +25,9 @@
  *         <mobile-dir>/fastlane/metadata/review_information/*.txt
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync, readdirSync, statSync } from 'node:fs';
-import { join, resolve, dirname } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { findMobileDir, readVersion } from './lib/expo-project.mjs';
 
 // ------------------------------------------------------------------ arguments
 const argv = process.argv.slice(2);
@@ -35,58 +36,6 @@ const arg = (name, fallback) => {
   return i === -1 ? fallback : argv[i + 1];
 };
 const die2 = (msg) => { console.error(`gen-store-metadata: ${msg}`); process.exit(2); };
-
-/**
- * Find the Expo app directory by locating its config, rather than assuming a name.
- *
- * Projects in the wild call this `mobile/`, `mobile_frontend/`, `frontend/`, or
- * `frontend/apps/mobile/` in a monorepo. Depending on the name is how a shared tool ends up
- * with a per-project fork, so the kit resolves it instead.
- */
-function findMobileDir(root, depth = 4) {
-  const SKIP = new Set(['node_modules', '.git', 'ios', 'android', '.expo', 'dist', 'build']);
-  const hits = [];
-  const walk = (dir, d) => {
-    if (d > depth) return;
-    for (const f of ['app.json', 'app.config.ts', 'app.config.js']) {
-      const p = join(dir, f);
-      // app.json is also a plain npm-ish filename; require an `expo` key to be sure.
-      if (existsSync(p)) {
-        if (f !== 'app.json') { hits.push(dir); return; }
-        try { if (JSON.parse(readFileSync(p, 'utf8')).expo) { hits.push(dir); return; } } catch { /* not ours */ }
-      }
-    }
-    let entries = [];
-    try { entries = readdirSync(dir); } catch { return; }
-    for (const e of entries) {
-      if (SKIP.has(e) || e.startsWith('.')) continue;
-      let s; try { s = statSync(join(dir, e)); } catch { continue; }
-      if (s.isDirectory()) walk(join(dir, e), d + 1);
-    }
-  };
-  walk(root, 0);
-  return hits[0] ?? null;
-}
-
-/** Marketing version, from app.json or a best-effort read of app.config.*. */
-function readVersion(mobileDir) {
-  const jsonPath = join(mobileDir, 'app.json');
-  if (existsSync(jsonPath)) {
-    try {
-      const v = JSON.parse(readFileSync(jsonPath, 'utf8'))?.expo?.version;
-      if (v) return v;
-    } catch { /* fall through */ }
-  }
-  for (const f of ['app.config.ts', 'app.config.js']) {
-    const p = join(mobileDir, f);
-    if (!existsSync(p)) continue;
-    // A dynamic config can compute anything; a literal covers the common case and we say so
-    // rather than silently guessing wrong.
-    const m = readFileSync(p, 'utf8').match(/version:\s*['"]([^'"]+)['"]/);
-    if (m) return m[1];
-  }
-  return null;
-}
 
 const REPO = resolve(arg('repo', process.cwd()));
 const MOBILE = resolve(arg('mobile-dir', findMobileDir(REPO) ?? '')) || null;

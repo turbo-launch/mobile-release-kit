@@ -11,7 +11,8 @@
     "mrk-mcp": "scripts/mcp-server.js",
     "mrk-verify": "scripts/verify-release-artifact.sh",
     "mrk-store-metadata": "scripts/gen-store-metadata.mjs",
-    "mrk-sim-capture": "scripts/sim-capture.sh"
+    "mrk-sim-capture": "scripts/sim-capture.sh",
+    "mrk-projects": "scripts/mobile-projects.mjs"
   },
   "scripts": {
     "mcp": "node scripts/mcp-server.js",

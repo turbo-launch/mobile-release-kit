@@ -149,6 +149,7 @@ You don't invoke these by name — say what you're doing and the right one loads
 | "ship it", "eas build/submit", "upload the build" | `releasing-with-eas` |
 | "start a release and walk me through it" | `driving-a-release` |
 | "we just fixed X", "remember this for next time" | `capturing-what-you-learned` |
+| "which apps do I have", "what version is live" | `/…:mobile-projects` |
 
 [`docs/lessons.md`](docs/lessons.md) is the *why* behind the rules these state — the mistakes that produced them, written up so the rule survives a deadline.
 
@@ -172,6 +173,7 @@ You don't invoke these by name — say what you're doing and the right one loads
 | Command | `/…:frame-screenshots` | One-shot framing of a screenshot folder |
 | Command | `/…:release` | Drive an interactive, resumable release with a tracked checklist |
 | Command | `/…:learn` | Capture a lesson from the session into the right layer |
+| Command | `/…:mobile-projects` | Every registered app: local version vs what's live in the App Store |
 | Agent | `release-orchestrator` | Runs the whole pipeline across the skills |
 | Hook | — | (Claude Code) warns before a `git` command commits a build artifact |
 | Scripts | `frame-screenshots.js` (incl. `feature-graphic` mode), `contact-sheet.js`, `mcp-server.js`, `sim-capture.sh`, … | The standalone tools |

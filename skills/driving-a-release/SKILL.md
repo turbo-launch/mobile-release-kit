@@ -61,6 +61,8 @@ down. This is the only moment it is cheap — a week later the detail is gone an
 vague sense that "something about push was fiddly" survives.
 
 Run **capturing-what-you-learned** (or `/mobile-release-kit:learn`) as the last checklist
-item. It applies one test — *would this be true in a different app?* — and routes each
+item, and register the project if it isn't already
+(`${CLAUDE_PLUGIN_ROOT}/scripts/mobile-projects.mjs register`) so it appears in the
+inventory alongside the others. It applies one test — *would this be true in a different app?* — and routes each
 lesson to the plugin or to this project accordingly. Prompt for it explicitly rather than
 waiting to be asked; nobody ever asks.
