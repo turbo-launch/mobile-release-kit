@@ -53,7 +53,9 @@ bun start --web --clear     # plain `start` serves a CACHED bundle — you'll ch
 
 ## Verify — the #1 weakness
 
-Success here means "a PNG was written," **not** "the PNG is good." A screen that failed to seed renders its empty state ("No matches yet") and ships looking broken. So **assert before you capture** — and make the **positive** check (expected content present) the primary gate, with a *narrow* blocklist secondary:
+Success here means "a PNG was written," **not** "the PNG is good." A screen that failed to seed renders its empty state ("No matches yet") and ships looking broken.
+
+**Why the deepest screen is the one that breaks:** a detail screen usually reads a *different* query than the feed you seeded, so a seeder that fills the list leaves the detail's child rows empty — and the detail screen is the one you most want to market. A real v1.0.0 shipped "No matches yet" on its hero screenshot that way. Seed the **children**, assert count > 0, and pick the richest entity. So **assert before you capture** — and make the **positive** check (expected content present) the primary gate, with a *narrow* blocklist secondary:
 
 ```js
 // Primary gate: the screen's own hero/content must be present. Per-screen.
@@ -81,4 +83,4 @@ Capture in the app's most flattering appearance and keep the **whole set consist
 ## Known failure modes
 
 - **Wrong-platform chrome.** RN-Web renders **one** platform's native `Switch`/`DateTimePicker`/action-sheet for **both** device folders — your iOS shots may show Material controls. The viewport flag doesn't change it. Fix with a custom platform-faithful component (best), or accept + document (Apple/Google tolerate minor control-style diffs).
-- **Hermes i18n.** `Date.toLocaleDateString('az', …)` works on web (V8) but emits garbage on-device (Hermes ships no CLDR for non-en locales). Format dates from i18n name tables, not `Intl`. Invisible in the web shot — reason about Hermes, don't trust the PNG.
+- **Hermes i18n.** `Date.toLocaleDateString('az', …)` works on web (V8) but emits garbage on-device ("M06 9, Tue") — Hermes ships no CLDR for non-en locales. Format dates from i18n name tables in the bundle (weekday/month arrays + a per-locale template, since some locales flip to day-month order), not `Intl`. Pull tab-bar labels and any hardcoded UI strings from i18n too — a custom tab bar is the usual offender. **Invisible in the web shot** (V8 renders it fine), so reason about Hermes rather than trusting the PNG.
