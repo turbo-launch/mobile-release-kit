@@ -44,13 +44,29 @@ function expoBlock(mobileDir) {
 }
 
 /** Best-effort literal read out of a dynamic config. A computed value is not knowable
- *  without evaluating the config, so callers must tolerate null rather than trust a guess. */
+ *  without evaluating the config, so callers must tolerate null rather than trust a guess.
+ *
+ *  Two shapes are resolved, because the second is common enough that missing it makes a
+ *  live app look unpublished:
+ *      bundleIdentifier: 'com.acme.app'      ← literal
+ *      bundleIdentifier: IOS_BUNDLE_ID       ← const declared earlier in the same file
+ *  Anything else (a template string, a ternary, an env read) stays null by design. */
 function fromDynamicConfig(mobileDir, key) {
   for (const f of ['app.config.ts', 'app.config.js']) {
     const p = join(mobileDir, f);
     if (!existsSync(p)) continue;
-    const m = readFileSync(p, 'utf8').match(new RegExp(`${key}:\\s*['"]([^'"]+)['"]`));
-    if (m) return m[1];
+    const src = readFileSync(p, 'utf8');
+
+    const literal = src.match(new RegExp(`${key}:\\s*['"]([^'"]+)['"]`));
+    if (literal) return literal[1];
+
+    const ref = src.match(new RegExp(`${key}:\\s*([A-Za-z_$][\\w$]*)`));
+    if (ref) {
+      const decl = src.match(
+        new RegExp(`(?:const|let|var)\\s+${ref[1]}\\s*(?::[^=]+)?=\\s*['"]([^'"]+)['"]`),
+      );
+      if (decl) return decl[1];
+    }
   }
   return null;
 }

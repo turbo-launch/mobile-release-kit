@@ -60,6 +60,25 @@ run a production build later with `.env.local` still in place. A cloud build ign
 **Rule: move `.env.local` aside before any release build, and assert against the artifact
 afterwards.** Not "remember to" — make it a step in the build recipe.
 
+**The files merge per-variable, and the mode file wins — not `.env`.** A production build
+loads `.env.<mode>` *and* `.env`; `.env` only fills variables the mode file does not define.
+The intuition that the gitignored `.env` overrides everything is backwards, and it hides a
+second failure: **a variable that lives only in `.env` still builds correctly on the machine
+that has it, and silently vanishes everywhere else** — CI, a colleague, a fresh clone —
+baking a placeholder into a signed artifact. Every variable a release needs belongs in the
+*committed* env file; treat the gitignored one as dev overrides only.
+
+**Ask the tooling rather than reasoning about precedence.** It prints the answer:
+
+```bash
+NODE_ENV=production bunx expo config --type public   # → "env: load .env.production .env"
+```
+
+The `env: load` line names the files in precedence order for that exact mode, and the
+resolved config follows — no build required. (`--type introspect` goes further and applies
+config-plugin mods in memory, which is the cheap way to prove a plugin chain works — that an
+entitlement or manifest entry really lands — without running a build.)
+
 **EAS env vars only reach a build whose profile declares an environment.** A profile with no
 `"environment"` key silently gets none of them:
 

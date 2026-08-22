@@ -177,7 +177,14 @@ for (const r of rows) {
   // Absent means only that: not published in the storefront queried. An app in review, an
   // app approved but not released, and a region-limited app all look identical from here —
   // so say where we looked rather than pronouncing it dead.
-  const iosLive = has('--no-live') ? '—' : (r.iosLive ?? `not in ${r.queriedCountry}`);
+  //
+  // But never say "not in XX" when there was no bundle ID to look up: a dynamic
+  // app.config.ts can set `bundleIdentifier: SOME_CONST`, which the literal read cannot
+  // resolve. Reporting an unqueried app as absent is how a live app gets recorded as
+  // unpublished — the same "invented answer" failure the version column avoids.
+  const iosLive = has('--no-live')
+    ? '—'
+    : (r.iosLive ?? (r.ios ? `not in ${r.queriedCountry}` : 'no bundle id'));
   // "local is ahead of the store" is the state worth surfacing: a version bumped and
   // committed but never submitted, or submitted and stuck in review.
   const isAhead = r.version && r.iosLive && r.version !== r.iosLive;

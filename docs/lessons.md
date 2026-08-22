@@ -76,6 +76,32 @@ afterwards — `--absent '192.168'` must pass.
 
 → `configuring-expo-env`
 
+## A var living only in `.env` builds fine on your machine and nowhere else
+
+An app kept its iOS Google client ID and URL scheme only in the gitignored `.env`. Release
+builds were correct for months — because production loads **both** `.env.production` and
+`.env`, so the developer's own machine filled the gap. On any other machine, or in CI, those
+two variables simply vanished and the build baked the placeholder
+`com.googleusercontent.apps.placeholder` into `Info.plist`: a signed artifact whose Google
+Sign-In cannot work, from a completely green build.
+
+The precedence is worth stating exactly, because "`.env` overrides `.env.production`" is the
+intuition and it is backwards:
+
+| Mode | Loads | Wins |
+|---|---|---|
+| `NODE_ENV=production` | `.env.production` **then** `.env` | `.env.production`, per variable |
+| dev / default | `.env` only | — `.env.production` is never read |
+
+**Rule:** every variable a release build needs belongs in the *committed* env file. Treat the
+gitignored one as dev-only overrides, never as the sole home of anything.
+
+**Corollary:** ask the tooling instead of guessing. `NODE_ENV=production expo config --type
+public` prints an `env: load …` line naming the files in precedence order, and the resolved
+config underneath — the whole question answered in two seconds, no build required.
+
+→ `configuring-expo-env`
+
 ## A fixed `--output` path silently destroys the previous artifact
 
 `build --local --output build-<version>.ipa` run twice overwrites the first artifact with no
@@ -104,6 +130,24 @@ binary carries the config: `unzip -l build.aab | grep -i google-services`.
 HTTP API in June 2024. Uploading there appears to succeed and delivers nothing.
 
 → `setting-up-push-notifications`
+
+## "Not published" and "I could not read the identifier" must not print the same
+
+`mobile-projects` reported an app as `not in AZ` when it was live on the App Store under
+that exact storefront. The store lookup was fine; the *bundle ID* was never read. The app
+declared `bundleIdentifier: IOS_BUNDLE_IDENTIFIER` — a const, not a string literal — so the
+literal-only reader returned null, and a null identifier rendered identically to a confirmed
+absence. The tool was reporting a fact about itself as a fact about the App Store.
+
+**Rule:** when a lookup never ran, say so (`no bundle id`) rather than reporting the empty
+result. An unqueried app must never read as unpublished — that is the same invented answer
+the version column already refuses to give.
+
+**Corollary:** a literal-only regex over a dynamic `app.config.ts` misses the very common
+`key: SOME_CONST` shape. Resolve one level of const reference; leave genuinely computed
+values null.
+
+→ `mobile-projects` / `scripts/lib/expo-project.mjs`
 
 ## Screenshots are the most stale artifact you ship
 
