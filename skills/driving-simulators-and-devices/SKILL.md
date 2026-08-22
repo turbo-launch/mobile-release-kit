@@ -90,6 +90,29 @@ every request fails. Correct production behaviour for warm starts; a menace whil
 stale style objects, so a layout fix can look applied when it isn't, and vice versa. When
 verifying anything visual: uninstall, install, launch.
 
+**But uninstall-first testing cannot see an upgrade bug.** Reset is the right default and it
+hides an entire failure class: a cache the *previous shipped build* wrote, rehydrating into
+code that reads a field that build never wrote. It presents as a crash on launch, every
+launch, fixed only by deleting the app — and a fresh install never reproduces it. Before
+calling a release verified, test the upgrade too:
+
+```bash
+# install the PREVIOUS shipped artifact, open it, let it write its caches, then:
+xcrun simctl install booted <new>.app     # no uninstall — that is the point
+xcrun simctl launch booted com.example.app
+```
+
+No copy of the old build to hand? Fake its state instead — terminate the app and edit the
+simulator's AsyncStorage directly:
+
+```bash
+C=$(xcrun simctl get_app_container booted com.example.app data)
+ls "$C/Library/Application Support/com.example.app/RCTAsyncLocalStorage_V1"   # manifest + payload
+```
+
+A launch that reaches the backend **exactly once** and then stops is the signature: bootstrap
+finished, the first screen died during render, no query ever fired.
+
 ## Picking the device for store screenshots
 
 Output pixels must match the store slot exactly, and most simulators don't:

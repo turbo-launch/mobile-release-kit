@@ -29,6 +29,7 @@ For a guided, resumable run that tracks state across a multi-day release, use th
 - [ ] 1. ASK: cloud or local build? (changes config source, artifact and upload)
 - [ ] 2. Build the chosen way → note the build IDs / artifact paths
 - [ ] 3. Gate every artifact before it is uploaded — no exceptions
+- [ ] 3b. If this is an UPDATE: install it over the previous shipped build and cold-launch
 - [ ] 4. iOS:     eas submit --id <build-id>   OR   xcrun altool --upload-app
 - [ ] 5. Android: eas submit --id <build-id>   OR   upload the .aab in Play Console
 - [ ] 6. Post:    git tag v<version>; watch crashes; bump version
@@ -263,6 +264,7 @@ Not every change needs a new build. **JS/asset-only** changes can ship over-the-
 - **Placeholder `projectId`** → `eas init --force`. Pin `owner` in the config when the account has multiple orgs.
 - **External IDs** (Apple ID, ASC app id, team id, Google reversed-iOS-client-id) → keep `REPLACE_WITH_*` markers; never fabricate — an invalid value fails the submit confusingly.
 - **Build artifacts** (`.aab` ~74MB, `.ipa` ~18MB) must be **gitignored** (`build-*.aab`, `build-*.ipa`, `*.apk`), never committed.
+- **An update crashing on launch while a fresh install is fine** → a cache the *previous* build persisted is being rehydrated into code that reads a field it never wrote. Version-key the cache so a foreign one is dropped rather than trusted — with `persistQueryClient`, ``buster: `v${Constants.expoConfig?.version}` `` — persist server reads only, and read defensively where the shape is restored. The tell is a launch that reaches the backend **exactly once**: bootstrap finished, the first screen died during render, no query ever fired. A fresh install cannot reproduce it, so uninstall-first testing never sees it (see `driving-simulators-and-devices`).
 
 ## Starting points (bundled templates)
 

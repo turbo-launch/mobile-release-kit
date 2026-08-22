@@ -238,3 +238,45 @@ which also clears the persisted query cache) rather than trusting a reload — a
 cache makes a dead backend look like a live one.
 
 → `driving-simulators-and-devices`
+
+
+## A persisted cache written by the old build is input to the new build's code
+
+An update crashed on launch, every launch, and only deleting the app recovered it. The
+backend saw exactly one request — `GET /me`, 200 — and nothing after. That single request is
+the whole diagnosis: the auth bootstrap completed, then the first screen died during render,
+before any query could fire.
+
+The previous version had persisted its filter state (client-owned UI state parked in the
+React Query cache under a synthetic key — permanently `status: 'success'` because it has
+`initialData`, so `shouldDehydrateQuery` wrote it as though it were a server read). The new
+version's code read a field that state never had, and `undefined.length` threw out of a
+component on the home screen. A red box in development. A dead process in release.
+
+**A fresh install cannot reproduce this**, which is why it survived a full verification pass
+on both platforms. Every check had run after an `uninstall`, so every check ran against empty
+storage and never once exercised rehydration.
+
+**Rule:** version-key any persisted client cache, so a cache written by a different build is
+discarded instead of being trusted. With `persistQueryClient` that is one line, and it costs
+one cold fetch per update rather than a crash loop:
+
+```ts
+persistQueryClient({ queryClient, persister, buster: `v${Constants.expoConfig?.version}` })
+```
+
+Read the version from the app config, never `process.env` — the same value the artifact
+gate reads back out of the binary.
+
+**Corollary:** persist *server reads only*. Client UI state in the cache is a cross-version
+migration surface you did not mean to create; exclude it from `shouldDehydrateQuery`. And
+read defensively where the shape is rehydrated (`{ ...DEFAULTS, ...persisted }`) — three
+cheap layers, one root cause.
+
+**Corollary:** an upgrade is a distinct test from an install. Before calling a release
+verified, install the *previous shipped artifact*, use it enough to write its caches, then
+install the new build over it and cold-launch. Cheap substitute when the old build is awkward
+to get: terminate the app and edit the simulator's AsyncStorage to the old shape —
+`.../Data/Application/<id>/Library/Application Support/<bundle-id>/RCTAsyncLocalStorage_V1/<hash>`.
+
+→ `driving-simulators-and-devices`, `releasing-with-eas`
