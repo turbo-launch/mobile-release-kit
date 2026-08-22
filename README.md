@@ -193,9 +193,12 @@ The test when you learn something new: **would this be true in a different app w
 `${CLAUDE_PLUGIN_ROOT}` only exists inside an agent session, so task runners reach the scripts over git instead:
 
 ```bash
-bunx github:turbo-launch/mobile-release-kit mrk-verify build.ipa \
-    --string 'Localized copy' --absent '192.168'
-bunx github:turbo-launch/mobile-release-kit mrk-frame --config frames.config.json
+# --package selects which bin to run; without it bunx picks the wrong one.
+MRK="bunx --package github:turbo-launch/mobile-release-kit#main"
+
+$MRK mrk-verify build.ipa --string 'Localized copy' --absent '192.168'
+$MRK mrk-frame --config frames.config.json
+$MRK mrk-store-metadata --repo .
 ```
 
 Pin a tag rather than tracking the default branch, so a change here can't silently alter your release build.

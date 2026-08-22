@@ -73,6 +73,11 @@ eas env:set --environment production --name EXPO_PUBLIC_API_BASE_URL --value htt
     --visibility plaintext --type string --non-interactive     # env:set upserts; env:create is deprecated
 ```
 
+> **EAS env vars live only on EAS.** Deleting and re-creating a project takes its whole
+> environment with it, and nothing in the repo will tell you. Keep the production values
+> recoverable from the tracked `.env` and a small idempotent script that replays them with
+> `eas env:set` — `env:set` upserts, so re-running is safe.
+
 ## Verify against the artifact, never against the build succeeding
 
 A green build tells you nothing about this. Gate the upload instead — see

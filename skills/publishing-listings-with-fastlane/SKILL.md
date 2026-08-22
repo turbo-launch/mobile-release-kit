@@ -43,7 +43,7 @@ places, and duplicated copy drifts — that is exactly how a store listing ends 
 an app that no longer exists. **Keep one source document and generate the tree from it.**
 
 ```bash
-bunx github:turbo-launch/mobile-release-kit mrk-store-metadata
+bunx --package github:turbo-launch/mobile-release-kit#main mrk-store-metadata --repo .
 ```
 
 **Gitignore the output.** The tree contains `review_information/demo_password.txt` — a real
