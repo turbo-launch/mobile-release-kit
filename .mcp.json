@@ -2,7 +2,7 @@
   "mcpServers": {
     "mobile-release-kit": {
       "command": "node",
-      "args": ["scripts/mcp-server.js"]
+      "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/mcp-server.js"]
     }
   }
 }

@@ -33,6 +33,7 @@ All notable changes to this project are documented here. Format loosely follows
 - Renderer now HTML-escapes headline/eyebrow copy, warns on raw aspect/size mismatch, and no longer requires a `rawDir` in feature-graphic mode.
 - Tightened the web-capture empty-screen detection (a bare `error` substring matched legitimate content).
 - `docs/store-specs.md` is now the single source of truth (added the iOS no-alpha icon rule, Play 2:1 aspect cap, dark-mode consistency, release-notes limit).
+- `.mcp.json` now resolves the server via `${CLAUDE_PLUGIN_ROOT}` instead of a relative `scripts/mcp-server.js`. MCP servers launch with the **consuming project** as cwd, so the relative path resolved outside the plugin, node exited on a missing module, and the host reported only "Connection closed" — the server itself was fine.
 
 ## [0.1.0] — initial
 
