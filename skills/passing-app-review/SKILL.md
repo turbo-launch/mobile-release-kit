@@ -54,6 +54,33 @@ Empty output on an app with sign-in means it will be rejected. If deletion is as
   exception, not a loophole for digital content.)
 - If an entitlement is granted **server-side** with no purchase in the binary, say so in the
   review notes or it reads as an undeclared IAP.
+- **2.1(b) — submit the IAP *with* the version.** An in-app purchase that merely exists in
+  the App Store Connect record, unattached to a submission, is rejected as *"references to
+  purchases but the associated In-App Purchase products have not been submitted for review"* —
+  and it fires on the **record**, not the binary, so a build carrying no purchase surface at
+  all is rejected too. Your first IAP must go with a new app version.
+
+**Build the submission in the draft, and submit once from there.** Pressing *Add for Review*
+on the version page while a draft is open does not add the version to that draft — it forks a
+**second submission containing only the app** and sends it, leaving your IAP behind. Nothing
+in the UI shows this; the version reads *Waiting for Review* either way. The submission list
+is the tell, in the column nobody reads:
+
+> **1 Item, on an app that sells anything, is the bug.**
+
+Adding the subscription **group** is not adding the subscription — add the auto-renewable
+subscription from inside the group. Then verify from the API rather than the console, because
+both states look identical there:
+
+```bash
+# after submitting, the subscription must NOT still say READY_TO_SUBMIT
+GET /v1/subscriptionGroups/{id}/subscriptions   ->  state: WAITING_FOR_REVIEW
+```
+
+Recovery is expensive, so get it right the first time: removing a version from review sets it
+`DEVELOPER_REJECTED`, which **greys out Add for Review**, leaving `POST
+/v1/reviewSubmissionItems` as the only way to attach it — and you go to the back of a queue
+that can be two weeks long.
 
 See `selling-subscriptions` for the disclosure the paywall itself must carry.
 

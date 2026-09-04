@@ -280,3 +280,95 @@ to get: terminate the app and edit the simulator's AsyncStorage to the old shape
 `.../Data/Application/<id>/Library/Application Support/<bundle-id>/RCTAsyncLocalStorage_V1/<hash>`.
 
 → `driving-simulators-and-devices`, `releasing-with-eas`
+
+## A review submission is a basket, and "Add for Review" makes a *new* one
+
+An app with its first in-app purchase was rejected 2.1(b) — *"the app includes references to
+purchases but the associated In-App Purchase products have not been submitted for review."*
+The fix is to submit the IAP together with the version. A draft submission was created, the
+subscription added to it — and then **Add for Review** was pressed on the app version page.
+That did not add the version to the open draft. It created a second submission containing
+only the app, and sent it. The draft with the subscription sat there, `submitted=None`, while
+the app went to review alone for the third time.
+
+Nothing in the UI says this. The version page's **In-App Purchases and Subscriptions**
+section is now read-only explanatory text with nothing to tick, and the version shows a
+cheerful *Waiting for Review*. The submission list is the only place the truth appears, in a
+column nobody reads: every failed attempt says **1 Item**.
+
+Recovery is worse than the mistake. Removing the version from review sets it
+`DEVELOPER_REJECTED`, which **greys out Add for Review** — so the UI now offers no way to put
+the version into the draft at all. The API does:
+
+```
+POST /v1/reviewSubmissionItems
+{"data":{"type":"reviewSubmissionItems","relationships":{
+  "reviewSubmission":{"data":{"type":"reviewSubmissions","id":"<draft-id>"}},
+  "appStoreVersion":{"data":{"type":"appStoreVersions","id":"<version-id>"}}}}}
+```
+
+And the queue cost is not theoretical: on this app a submission sat in *Waiting for Review*
+for **twelve days**, and only moved when the developer wrote to App Review — who then
+rejected it in two hours. A withdraw-and-resubmit is a two-week decision.
+
+**Rule:** build the submission in the **draft**, add every item to it, and submit once from
+there. Never press *Add for Review* on the version page while a draft is open — it silently
+forks a second submission. Before submitting, confirm the item count matches what you
+intend; **1 Item on an app that sells anything is the bug.**
+
+**Corollary:** adding the subscription **group** is not adding the subscription. The draft
+accepts the group, then refuses to submit with *"New subscription groups must be submitted
+with an auto-renewable subscription from within that group"* — you must add the
+auto-renewable subscription itself, from inside the group.
+
+**Corollary:** verify from the API, not the console. After submitting, the subscription must
+read `WAITING_FOR_REVIEW`; if it still reads `READY_TO_SUBMIT` it did not go, and the version
+page looks identical either way.
+
+→ `passing-app-review`, `selling-subscriptions`
+
+## `deliver --verify_only` validates a binary, not your listing
+
+Used as the dry run before a metadata push — which is what it looks like, and what this kit
+told you to do — it validates nothing you care about. `deliver/runner.rb`:
+
+```ruby
+def run
+  if options[:verify_only]
+    verify_binary
+    return          # never reaches upload_metadata
+  end
+```
+
+It package-validates an `.ipa` and returns. With build artifacts sitting in the app directory
+it picks one up and tries to validate an **already-uploaded build**, failing with
+*"The bundle version must be higher than the previously uploaded version"* — an error about
+a binary you were not pushing, from a command you ran to check your copy.
+
+**Rule:** there is no metadata dry run in `deliver`. Build the check out of the parts that do
+work — the metadata generator (character limits, surviving placeholders), a screenshot
+dimension check, and `precheck` on its own:
+
+```bash
+bunx fastlane precheck --include_in_app_purchases false
+```
+
+(`precheck` cannot read IAPs with an API key and errors out if you let it try.)
+
+**Corollary:** pin `app_version` in the `Deliverfile`. Left unset, deliver reads it from
+whichever `.ipa` it auto-detected (`detect_values.rb`) — so with several builds lying around
+a metadata push can land this release's copy on an **older version record**.
+
+**Corollary:** `__dir__` is not the `Deliverfile`'s directory. fastlane `eval`s that file, and
+`__dir__` resolves one level up — so `File.expand_path('../app.json', __dir__)` climbs out of
+the app directory and dies on `ENOENT`, and `File.expand_path('metadata', __dir__)` silently
+points somewhere that does not exist. Locate the app by searching for `app.json` instead of
+trusting `__dir__`.
+
+**Corollary:** `deliver` reports screenshot success it did not have. Its post-upload check
+races App Store Connect's processing, decides the still-processing images are *"missing on
+App Store Connect"*, re-uploads them, and prints **"Successfully uploaded all screenshots"** —
+leaving duplicates, and silently dropping the tail of the set once the 10-image cap is hit.
+Count them afterwards rather than trusting the line.
+
+→ `publishing-listings-with-fastlane`

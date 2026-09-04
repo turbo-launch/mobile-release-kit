@@ -77,11 +77,27 @@ gitignored local file, so the source document can carry a `REPLACE_WITH_*` marke
 ## `Deliverfile` — the settings that matter
 
 ```ruby
+app_version           version # PIN IT — see below
 overwrite_screenshots true    # otherwise a re-run STACKS onto the stale set in ASC
 submit_for_review     false   # never let a metadata push start a review
 automatic_release     false
 skip_binary_upload    true    # the binary is uploaded separately
 force                 true    # skip the interactive HTML preview (CI)
+```
+
+**Pin `app_version`.** Unset, deliver reads it from whichever `.ipa` it auto-detects
+(`detect_values.rb`); with several builds in the directory a metadata push can land this
+release's copy on an **older version record**.
+
+**Do not resolve paths from `__dir__`.** fastlane `eval`s the `Deliverfile`, and `__dir__`
+comes out one level above `fastlane/` — so `'../app.json'` climbs out of the app directory
+and dies on `ENOENT`, and `metadata_path` silently points at a directory that does not exist.
+Find the app by searching for `app.json`:
+
+```ruby
+mobile = [File.expand_path('..', __dir__), Dir.pwd, File.expand_path('..', Dir.pwd)]
+         .find { |d| File.exist?(File.join(d, 'app.json')) }
+raise 'Deliverfile: could not find app.json' unless mobile
 ```
 
 `Appfile` carries the identity:
@@ -95,17 +111,30 @@ team_id        "REPLACE_WITH_TEAM_ID"
 ## Running it
 
 ```bash
-bunx fastlane deliver --verify_only        # dry run — validates, uploads nothing
-bunx fastlane deliver                      # the real push
+bunx fastlane deliver --precheck_include_in_app_purchases false   # the push
 ```
 
-**Always `--verify_only` first.** `precheck` catches the rejections you would otherwise wait
-a day to hear about — placeholder text, broken URLs, prohibited words. Disable only the
-checks that genuinely do not apply:
+**`--verify_only` is NOT a metadata dry run.** It package-validates a binary and returns
+before `upload_metadata` ever runs (`deliver/runner.rb`) — so it checks nothing about your
+copy or screenshots, and with build artifacts in the app directory it validates an
+already-uploaded `.ipa` and fails on a duplicate bundle version. There is no metadata dry run
+in `deliver`. Build one from the parts that work:
 
 ```bash
-bunx fastlane deliver --precheck_include_in_app_purchases false
+bunx mrk-store-metadata                        # limits + surviving REPLACE_WITH_
+bunx mrk-check-screenshots <screenshots-dir>   # every capture is a size ASC accepts
+bunx fastlane precheck --include_in_app_purchases false
 ```
+
+`precheck` is what catches the rejections you would otherwise wait a day to hear about —
+placeholder text, broken URLs, prohibited words. It **cannot** read in-app purchases with an
+API key and errors out if you let it try, hence the flag — on `deliver` it is spelled
+`--precheck_include_in_app_purchases false`.
+
+**Count the screenshots afterwards.** `deliver`'s post-upload check races ASC's processing,
+declares the still-processing images *"missing on App Store Connect"*, re-uploads them, and
+still prints "Successfully uploaded all screenshots" — leaving duplicates and silently
+dropping the tail of the set once the 10-image cap is reached.
 
 ## What fastlane is *not* for here
 

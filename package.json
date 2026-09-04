@@ -6,13 +6,14 @@
   "repository": "https://github.com/turbo-launch/mobile-release-kit",
   "type": "commonjs",
   "bin": {
-    "mrk-frame": "scripts/frame-screenshots.js",
+    "mrk-check-screenshots": "scripts/check-screenshots.sh",
     "mrk-contact-sheet": "scripts/contact-sheet.js",
+    "mrk-frame": "scripts/frame-screenshots.js",
     "mrk-mcp": "scripts/mcp-server.js",
-    "mrk-verify": "scripts/verify-release-artifact.sh",
-    "mrk-store-metadata": "scripts/gen-store-metadata.mjs",
+    "mrk-projects": "scripts/mobile-projects.mjs",
     "mrk-sim-capture": "scripts/sim-capture.sh",
-    "mrk-projects": "scripts/mobile-projects.mjs"
+    "mrk-store-metadata": "scripts/gen-store-metadata.mjs",
+    "mrk-verify": "scripts/verify-release-artifact.sh"
   },
   "scripts": {
     "mcp": "node scripts/mcp-server.js",
