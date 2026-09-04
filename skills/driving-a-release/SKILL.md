@@ -39,6 +39,31 @@ For each step, in order:
 - **Reconcile the review notes against the final screenshots**, as a step in its own right, after captures are locked. Listing copy is drafted early and screenshots land late; the draft's claims about login/access go stale. See `writing-store-listings` → "Anonymous-first ≠ no credentials needed".
 - **Log app defects found during capture under Notes / blockers** instead of fixing them inline. Driving screens for screenshots surfaces real bugs (a blank status bar, platform-inconsistent formatting). They're findings for the user to triage, not release work — and a speculative fix mid-capture invalidates raws you already took. If you do try one and it doesn't work, revert it rather than leaving a no-op change in the diff.
 
+## MANDATORY: diff the previous release folder before capturing anything
+
+**Do this before the first capture, every release. It is not optional and it is not a
+judgement call.**
+
+```bash
+ls -R docs/ops/mobile-releases/v<previous>/
+```
+
+That listing is the specification for this release. Every artifact in it — framed
+screenshot sets, `frames.config.json`, per-locale directories, feature graphic, promo
+video, contact sheet — is **required again**, unless the user explicitly drops it. Copy
+the config forward and edit it. Never begin from an empty folder and never treat
+"correct dimensions, uploaded successfully" as the screenshot job being finished.
+
+Record the diff in the checklist as its own line, naming each artifact the previous
+release had and where this one will get it.
+
+**Why this is a hard rule:** a dropped treatment fails nothing. Sizes validate,
+`precheck` passes, the metadata generator is happy, App Review does not object — and the
+listing ships visibly worse than the one before it. No check in this kit detects it;
+only the comparison does. And once the version is `WAITING_FOR_REVIEW`, screenshots
+cannot be swapped without withdrawing it and surrendering the queue slot, so the cheap
+fix window closes at submission.
+
 ## Screenshots are the long pole — scope them first
 
 Capture is routinely the largest, least predictable chunk of a release, and the estimate swings by an order of magnitude on facts you can check in two minutes. Before quoting any timeline:

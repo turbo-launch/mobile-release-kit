@@ -372,3 +372,37 @@ leaving duplicates, and silently dropping the tail of the set once the 10-image 
 Count them afterwards rather than trusting the line.
 
 → `publishing-listings-with-fastlane`
+
+## The previous release folder is the spec for this one
+
+A release shipped its store screenshots as bare simulator crops. The previous release,
+sitting in the sibling directory, had framed marketing images — device chassis, brand
+gradient, benefit headline — rendered from a `frames.config.json` that the new release
+never got. Nothing failed. The captures were the right size, the upload succeeded, App
+Review did not care. The listing simply got quietly worse than the one before it, and
+nobody noticed until the version was already `WAITING_FOR_REVIEW` and too expensive to
+touch.
+
+The checklist said *capture screenshots*, and that was done. It did not say *to the same
+standard as last time*, so the treatment was dropped without ever being a decision.
+
+**Rule:** before capturing anything, **list the previous release folder and diff its
+deliverables against your plan**. Every artifact that exists there — framed sets, a
+`frames.config.json`, per-locale directories, a feature graphic, a promo video — is
+required this release too, unless the user says otherwise. Carry the config forward and
+edit it; never start from an empty folder.
+
+```bash
+ls -R <releases-dir>/v<previous>/   # this is the spec
+```
+
+**Corollary:** the cost is asymmetric and back-loaded. Framing is under an hour of work,
+but screenshots on a version already submitted cannot be swapped without withdrawing it —
+which surrenders the review queue slot. Getting it right before submission is cheap;
+noticing afterwards means shipping the regression or paying days of queue time.
+
+**Corollary:** a listing regression is invisible to every automated check in this kit.
+Dimension checks, `precheck` and the metadata generator all pass on an unframed capture.
+Only the comparison against last release catches it.
+
+→ `driving-a-release`, `framing-store-screenshots`
