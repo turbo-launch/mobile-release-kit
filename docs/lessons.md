@@ -124,7 +124,11 @@ token. Because iOS push is entirely server-side, it is natural to conclude Andro
 Uploading the Android credential to EAS afterwards changes nothing until you rebuild.
 
 **Rule:** treat "no notifications" as "no token" until proven otherwise, and verify the
-binary carries the config: `unzip -l build.aab | grep -i google-services`.
+binary carries the config: `unzip -p build.aab base/resources.pb | grep -ac google_app_id`.
+
+**Corollary:** don't look for the file. The Gradle plugin compiles `google-services.json`
+into resources, so `unzip -l build.aab | grep google-services` finds nothing on a good
+build. That check once sat in a release checklist, where it could only fail.
 
 **Corollary:** the *Legacy* FCM slot in `eas credentials` is dead — Google retired the legacy
 HTTP API in June 2024. Uploading there appears to succeed and delivers nothing.
@@ -424,3 +428,32 @@ narrowest width that still gets the tablet layout: iPad 13" `834×1112` @2, Play
 `768×1229` @`1600/768`. The framer now refuses a raw more than 5% off the frame's aspect.
 
 → `capturing-store-screenshots-web`, `framing-store-screenshots`
+
+## eas-cli 24 local builds take their env from EAS, not your `.env` files
+
+A local build (`eas build --local`) of an app whose `eas.json` profile declares
+`"environment": "production"` came out with no RevenueCat keys and no WebSocket URL. The
+same command had always read `.env.production` from the working directory. With eas-cli
+24.x it read only the EAS-hosted environment, which held a different subset of variables.
+The build was green. The artifact gate caught it.
+
+**Rule:** before a local build, load the committed env file into the shell
+(`set -a; source .env.production; set +a`), then gate the artifact. Don't reason about
+which source wins; the gate tells you.
+
+→ `releasing-with-eas`, `configuring-expo-env`
+
+## `EXPO_NO_CAPABILITY_SYNC=1` gets you past one wall and leaves stale profiles
+
+EAS could not turn on App Groups for a widget extension: Apple's API rejected its
+capability patch (*"invalid value at data.relationships.bundleIdCapabilities…attributes"*).
+The workaround was to enable App Groups by hand in the developer portal and build with
+`EXPO_NO_CAPABILITY_SYNC=1`. The next archive failed with *"Provisioning profile … doesn't
+include the Associated Domains capability"*. The flag also stops EAS from regenerating
+profiles, so the existing ones never picked up the capabilities added since.
+
+**Rule:** the flag is for one build at most. Once the capability is on in the portal,
+build without it. Sync then passes and the profiles regenerate. The extension target also
+needs its own profile, and EAS creates that only in an interactive run.
+
+→ `releasing-with-eas`

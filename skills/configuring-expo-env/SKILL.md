@@ -51,7 +51,13 @@ not by profile:
 | `.env.local` | **read** — and outranks `.env` | **never** — gitignored, so it isn't in the uploaded archive |
 | `.env.<mode>` | read | only if committed |
 | `.env` | read | only if committed |
-| `eas env` / profile `environment` | not used | **the real source** |
+| `eas env` / profile `environment` | eas-cli ≥ 24 `eas build --local`: **used, and `.env.*` is not** | **the real source** |
+
+> **eas-cli 24.x changed `eas build --local`.** With `"environment"` in the profile it
+> takes the EAS-hosted variables and ignores `.env.production`, so a variable that lives
+> only in the file silently goes missing. Export the file before building:
+> `set -a; source .env.production; set +a`. `expo run:*` still reads the dotenv files.
+> Whatever the version, the artifact gate below is what tells you.
 
 The failure this produces: mid-session you point the app at a LAN IP for device testing, then
 run a production build later with `.env.local` still in place. A cloud build ignores it; a

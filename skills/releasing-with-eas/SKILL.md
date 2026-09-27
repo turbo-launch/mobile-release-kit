@@ -48,7 +48,7 @@ do for the rest of the release. Ask which one, every build:
 | | EAS cloud (`eas build`) | Local (`eas build --local`) |
 |---|---|---|
 | Cost | **billed** | free (your machine, ~15–40 min) |
-| Config source | the profile's `environment` on EAS | **the working directory's dotenv files** |
+| Config source | the profile's `environment` on EAS | eas-cli ≥ 24 with `environment` set: **the EAS environment, not `.env.*`** (see §2b) |
 | `.env.local` | never reaches it (git archive) | **read, and outranks `.env`** |
 | Credentials | EAS | EAS (same) — first run per platform is interactive |
 | Build number | EAS, with `appVersionSource: remote` | EAS (same) |
@@ -79,8 +79,15 @@ first time** — EAS has to create the iOS distribution certificate and the Andr
 keystore, and it prompts. **iOS requires macOS.**
 
 ```bash
+set -a; source .env.production; set +a    # eas-cli 24.x: without this, .env.production is ignored
 bunx eas-cli build --platform ios --profile production --local --output build.ipa
 ```
+
+> **eas-cli 24.x local builds read env from EAS, not your `.env` files.** With
+> `"environment": "production"` in the profile, `--local` takes only the EAS-hosted
+> variables and ignores `.env.production`. A release shipped its Android build with no
+> purchase keys and no WebSocket URL, because EAS held a different subset. Export the file
+> into the shell first (above), then gate the artifact (§3).
 
 > **A fixed `--output` path silently destroys the previous artifact.** No prompt, and with
 > `autoIncrement` the replaced build number is already spent — so the overwritten binary is
@@ -265,6 +272,37 @@ Not every change needs a new build. **JS/asset-only** changes can ship over-the-
 - **External IDs** (Apple ID, ASC app id, team id, Google reversed-iOS-client-id) → keep `REPLACE_WITH_*` markers; never fabricate — an invalid value fails the submit confusingly.
 - **Build artifacts** (`.aab` ~74MB, `.ipa` ~18MB) must be **gitignored** (`build-*.aab`, `build-*.ipa`, `*.apk`), never committed.
 - **An update crashing on launch while a fresh install is fine** → a cache the *previous* build persisted is being rehydrated into code that reads a field it never wrote. Version-key the cache so a foreign one is dropped rather than trusted — with `persistQueryClient`, ``buster: `v${Constants.expoConfig?.version}` `` — persist server reads only, and read defensively where the shape is restored. The tell is a launch that reaches the backend **exactly once**: bootstrap finished, the first screen died during render, no query ever fired. A fresh install cannot reproduce it, so uninstall-first testing never sees it (see `driving-simulators-and-devices`).
+
+## iOS signing and capabilities
+
+- **EAS can't enable App Groups** (or another capability) → Apple's API rejects the patch: *"invalid value at data.relationships.bundleIdCapabilities…attributes"*. Enable it by hand in developer.apple.com: create the group under Identifiers → App Groups, then turn App Groups on for **both** the app ID and the extension ID and tick that group on each.
+- **`EXPO_NO_CAPABILITY_SYNC=1` leaves stale profiles.** It skips the failing sync, but the existing provisioning profiles then lack every capability added since (Associated Domains, App Groups), and the archive fails with *"Provisioning profile … doesn't include the X capability"*. Once the capability is on in the portal, **build without the flag**: sync passes and the profiles regenerate. Or delete the stale profiles in `eas credentials`.
+- **An app extension (widget) needs its own profile**, and EAS creates it only in an interactive run. Run the first iOS build with the extension in a terminal, not from an agent.
+
+## Expo SDK 57 + Xcode 26.3: `expo-modules-jsi` won't archive
+
+Swift 6.2.x rejects `expo-modules-jsi` 57.1.0/57.1.1 in two waves: `SWIFT_RETURNS_RETAINED` on the `RuntimeScheduler` constructors ([expo/expo#50067](https://github.com/expo/expo/issues/50067)), then seven *"sending 'xPtr' risks causing data races"* on `nonisolated(unsafe) let` captures in `JavaScriptRuntime.swift` ([expo/expo#50470](https://github.com/expo/expo/issues/50470)). Until Expo ships the fix, patch it:
+
+- In `RuntimeScheduler.h`, drop `SWIFT_RETURNS_RETAINED` from both constructors.
+- In `JavaScriptRuntime.swift`, replace each `nonisolated(unsafe) let p = p` with a box, and read `p.value`:
+  ```swift
+  internal struct UncheckedSendable<Value>: @unchecked Sendable {
+    let value: Value
+    init(_ value: Value) { self.value = value }
+  }
+  ```
+- Switching the package to Swift 5 language mode does **not** work.
+- Ship it as a git-diff patch under `patchedDependencies` (bun) or `patch-package`. **Hand-write the diff**: `bun patch` failed with FileNotFound on a hoisted install and deleted the package folder.
+
+Prove it cheaply before a full EAS run, after `expo prebuild` + `pod install`:
+
+```bash
+JSI=<node_modules>/expo-modules-jsi/apple/scripts      # hoisted in a monorepo
+PODS_ROOT=$PWD/ios/Pods PLATFORM_NAME=iphoneos "$JSI/build-xcframework.sh"
+SKIP_BUNDLING=1 xcodebuild -workspace ios/<App>.xcworkspace -scheme <App> \
+  -configuration Release -destination 'generic/platform=iOS' \
+  -archivePath /tmp/check.xcarchive archive CODE_SIGNING_ALLOWED=NO
+```
 
 ## Starting points (bundled templates)
 

@@ -8,8 +8,9 @@ Benefit-led, scannable. Lead with what the user gains, not internal refactors.
 • [Improvement to an existing flow]
 • Bug fixes and performance improvements
 
---- Google Play ("What's new") — MAX 500 chars per language ---
+--- Google Play ("What's new") — MAX 500 chars per language, counted as NFC ---
 [Same spirit, <=500 chars. Play truncates hard.]
+[One tagged block per language: <en-US>…</en-US><az-AZ>…</az-AZ>]
 • [New thing]
 • [Improvement]
 • Fixes & polish
@@ -17,4 +18,6 @@ Benefit-led, scannable. Lead with what the user gains, not internal refactors.
 --- Notes ---
 - First release? Use a short "Welcome to [APP NAME]" intro instead of a changelog.
 - Keep one block per shipped locale (e.g. en, az); translate natively, don't calque.
+- A language Apple doesn't localize (e.g. az): local text first, a blank line,
+  then English, all in the one en-US App Store field.
 - Don't list internal/refactor work users can't see.

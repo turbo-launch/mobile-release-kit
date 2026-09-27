@@ -53,7 +53,11 @@ If the entitlement was granted server-side (as it must be when the binary carrie
 
 ## Release notes ("What's New")
 
-Both stores show a per-update "What's New" string. Benefit-led, scannable, lead with what the user gains. **Play caps release notes at 500 chars per language.** First release: a short "Welcome to [App]" beats a changelog. Fill `templates/release-notes.txt` (one block per locale).
+Both stores show a per-update "What's New" string. Benefit-led, scannable, lead with what the user gains. First release: a short "Welcome to [App]" beats a changelog. Fill `templates/release-notes.txt` (one block per locale).
+
+- **Play: 500 chars per language, one block each.** The console takes them tagged, e.g. `<az-AZ>…</az-AZ><en-US>…</en-US>`; the limit applies inside each tag.
+- **Apple has no localization for some languages** (Azerbaijani among them), so there is nowhere to put that text but the one en-US field. For a bilingual note, write the local language first, a blank line, then English, all in that field. Apple's field allows 4000 chars.
+- **Count Unicode NFC characters**, not bytes: `python3 -c 'import sys,unicodedata;print(len(unicodedata.normalize("NFC",sys.stdin.read().strip())))' < notes-az.txt`. A decomposed `ü` (u + combining mark) counts as two.
 
 ## Localized listings — workflow
 

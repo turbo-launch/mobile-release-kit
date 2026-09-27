@@ -74,8 +74,10 @@ eas credentials --platform android      # → FCM V1 service account key
 ## Verify end to end — do not infer
 
 ```bash
-# 1. does the binary carry the config at all?
-unzip -l build.aab | grep -i google-services      # expect a hit
+# 1. does the binary carry the config at all? The Gradle plugin compiles the JSON into
+#    resources, so the file never ships: `unzip -l | grep google-services` finds nothing.
+unzip -p build.aab base/resources.pb | grep -ac google_app_id          # expect >= 1
+unzip -p build.aab base/resources.pb | grep -ac gcm_defaultSenderId    # expect >= 1
 
 # 2. does a real device get a token?
 #    log it at startup in a dev build, then send one from https://expo.dev/notifications

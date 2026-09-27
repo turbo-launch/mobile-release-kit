@@ -26,6 +26,7 @@ sessions. Lives at `docs/ops/mobile-releases/v[VERSION]/RELEASE-CHECKLIST.md`.
 ## 1 · Build  **[CONFIRM]**
 - [ ] `eas build --platform all --profile production`
 - [ ] Record build IDs above (iOS .ipa, Android .aab)
+- [ ] `verify-release-artifact.sh` exits 0 on both; with push, `google_app_id` in the .aab's `base/resources.pb` (the JSON itself never ships)
 
 ## 2 · App Store
 - [ ] **[CONFIRM]** `eas submit --platform ios --id <ipa-build-id>`

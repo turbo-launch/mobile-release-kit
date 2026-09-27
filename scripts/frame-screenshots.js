@@ -20,7 +20,7 @@
  * bottom off-canvas. --allow-aspect-mismatch renders anyway, with a warning.
  *
  * Requires Playwright + a Chromium browser:
- *   npm i -D playwright && npx playwright install chromium
+ *   npm i -D playwright   # uses your installed Chrome; else `npx playwright install chromium`
  *   # or reuse a monorepo install: NODE_PATH=../node_modules node frame-screenshots.js ...
  *
  * Design rationale (from real App Store ASO research):
