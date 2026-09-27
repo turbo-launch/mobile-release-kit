@@ -15,7 +15,7 @@ Capture the raws first with `capturing-store-screenshots-live` (real/hero screen
 The renderer ships in the plugin at `scripts/frame-screenshots.js`. It needs Playwright + a Chromium:
 
 ```bash
-npm i -D playwright && npx playwright install chromium
+npm i -D playwright   # scripts use your installed Chrome; `npx playwright install chromium` only if there is none
 # in a monorepo that already has Playwright, skip the install and reuse it:
 #   NODE_PATH=<repo>/node_modules node scripts/frame-screenshots.js ...
 ```

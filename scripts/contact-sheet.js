@@ -8,6 +8,16 @@
  * Requires Playwright + Chromium (same as frame-screenshots.js).
  */
 const { chromium } = require('playwright');
+
+// System Chrome first: no `npx playwright install` download to fall out of date
+// (the bundled headless shell goes missing whenever Playwright updates).
+async function launchBrowser() {
+  try {
+    return await chromium.launch({ channel: 'chrome' });
+  } catch {
+    return await chromium.launch();
+  }
+}
 const fs = require('fs');
 const path = require('path');
 
@@ -30,7 +40,7 @@ const path = require('path');
    .c img{width:100%;display:block}
    .l{color:#bbb;font-size:13px;padding:6px 8px;text-align:center;word-break:break-all}
   </style><div class="grid">${cells}</div>`;
-  const b = await chromium.launch();
+  const b = await launchBrowser();
   const p = await b.newPage({ viewport: { width: W, height: 100 } });
   await p.setContent(html, { waitUntil: 'networkidle' });
   await p.screenshot({ path: out, fullPage: true });

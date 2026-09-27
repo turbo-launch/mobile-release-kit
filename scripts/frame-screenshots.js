@@ -39,6 +39,16 @@
  *    "popout@<device-key>" object on the screen — it shallow-merges over "popout".
  */
 const { chromium } = require('playwright');
+
+// System Chrome first: no `npx playwright install` download to fall out of date
+// (the bundled headless shell goes missing whenever Playwright updates).
+async function launchBrowser() {
+  try {
+    return await chromium.launch({ channel: 'chrome' });
+  } catch {
+    return await chromium.launch();
+  }
+}
 const fs = require('fs');
 const path = require('path');
 
@@ -212,7 +222,7 @@ function buildHTML(cfg, dev, screen, imgDataUri, rawSz) {
   if (dev.kind !== 'graphic' && !fs.existsSync(rawDir)) die(`rawDir not found: ${rawDir}`);
   fs.mkdirSync(outDir, { recursive: true });
 
-  const browser = await chromium.launch();
+  const browser = await launchBrowser();
   const page = await browser.newPage({ viewport: { width: dev.w, height: dev.h }, deviceScaleFactor: 1 });
 
   let n = 0, skipped = [];
