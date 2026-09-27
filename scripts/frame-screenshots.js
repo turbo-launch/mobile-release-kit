@@ -6,13 +6,18 @@
  * Config-driven (no per-app code edits). Point it at a frames.config.json that
  * defines your palette, per-screen eyebrow+headline copy, and screen order.
  *
- *   node frame-screenshots.js <config.json> <rawDir> <outDir> <device>
+ *   node frame-screenshots.js <config.json> <rawDir> <outDir> <device> [--allow-aspect-mismatch]
  *
  *   <config.json>  frames config (see templates/frames.config.json)
  *   <rawDir>       dir of raw <screen-key>.png screenshots (the inputs)
  *   <outDir>       where to write NN-<screen-key>.png framed images
  *   <device>       iphone-6.9 | ipad-13 | android-phone | android-tablet
  *                  | feature-graphic   (or any key under config.devices)
+ *
+ * A raw whose aspect is more than 5% off the device's is refused before anything
+ * renders: the device mockup takes the raw's shape, so a 20:9 raw in the 9:16
+ * android-phone frame grows taller, climbs toward the headline and loses its
+ * bottom off-canvas. --allow-aspect-mismatch renders anyway, with a warning.
  *
  * Requires Playwright + a Chromium browser:
  *   npm i -D playwright && npx playwright install chromium
@@ -209,9 +214,11 @@ function buildHTML(cfg, dev, screen, imgDataUri, rawSz) {
 }
 
 (async () => {
-  const [, , configPath, rawDir, outDir, deviceKey] = process.argv;
+  const argv = process.argv.slice(2);
+  const allowAspect = argv.includes('--allow-aspect-mismatch');
+  const [configPath, rawDir, outDir, deviceKey] = argv.filter(a => !a.startsWith('--'));
   if (!configPath || !rawDir || !outDir || !deviceKey) {
-    die('usage: frame-screenshots.js <config.json> <rawDir> <outDir> <device>');
+    die('usage: frame-screenshots.js <config.json> <rawDir> <outDir> <device> [--allow-aspect-mismatch]');
   }
   const cfg = loadConfig(configPath);
   const devices = { ...DEFAULT_DEVICES, ...(cfg.devices || {}) };
@@ -220,6 +227,34 @@ function buildHTML(cfg, dev, screen, imgDataUri, rawSz) {
   dev._key = deviceKey; // exposed to buildHTML for per-device screen overrides
   // The feature graphic has no device screen, so it doesn't read raws.
   if (dev.kind !== 'graphic' && !fs.existsSync(rawDir)) die(`rawDir not found: ${rawDir}`);
+  // Resolve the raw image: <key>.png, or a per-device/per-screen fallback list.
+  const resolveRaw = (key, screen) => {
+    const src = path.join(rawDir, key + '.png');
+    if (fs.existsSync(src) || !screen.fallback) return src;
+    const fb = Array.isArray(screen.fallback) ? screen.fallback : [screen.fallback];
+    return fb.map(k => path.join(rawDir, k + '.png')).find(fs.existsSync) || src;
+  };
+
+  // Check every raw's shape before rendering any, so a bad set fails whole.
+  if (dev.kind !== 'graphic') {
+    const devAR = dev.w / dev.h;
+    const off = [];
+    for (const key of cfg.order) {
+      const screen = cfg.screens[key];
+      const sz = screen && pngSize(resolveRaw(key, screen));
+      if (sz && Math.abs(sz.w / sz.h - devAR) / devAR > 0.05) {
+        off.push(`${key}: ${sz.w}x${sz.h} (aspect ${(sz.w / sz.h).toFixed(3)})`);
+      }
+    }
+    if (off.length) {
+      const msg = `raw aspect doesn't match ${deviceKey} ${dev.w}x${dev.h} (aspect ${devAR.toFixed(3)}):\n  ${off.join('\n  ')}\n` +
+        `Recapture with height = width x ${(dev.h / dev.w).toFixed(4)}` +
+        (deviceKey === 'android-phone' ? ' (web: 360x640 css @3; emulator: a pixel_2 AVD).' : '.');
+      if (!allowAspect) die(msg + '\nOr pass --allow-aspect-mismatch to render them anyway.');
+      console.warn('  ⚠ ' + msg);
+    }
+  }
+
   fs.mkdirSync(outDir, { recursive: true });
 
   const browser = await launchBrowser();
@@ -235,29 +270,17 @@ function buildHTML(cfg, dev, screen, imgDataUri, rawSz) {
       if (fs.existsSync(lp)) screen._logoDataUri = 'data:image/png;base64,' + fs.readFileSync(lp).toString('base64');
       else console.warn(`  ⚠ ${key}: logo not found at ${lp} — falling back to text eyebrow.`);
     }
-    // Resolve the raw image: <key>.png, or a per-device/per-screen fallback list.
-    let src = path.join(rawDir, key + '.png');
-    if (!fs.existsSync(src) && screen.fallback) {
-      const fb = Array.isArray(screen.fallback) ? screen.fallback : [screen.fallback];
-      const hit = fb.map(k => path.join(rawDir, k + '.png')).find(fs.existsSync);
-      if (hit) src = hit;
-    }
+    const src = resolveRaw(key, screen);
     // The feature graphic has no device screen — it doesn't consume a raw.
     if (dev.kind !== 'graphic' && !fs.existsSync(src)) { skipped.push(`${key} (no raw png in ${rawDir})`); continue; }
 
     let imgDataUri = '';
     let rawSz = null;
     if (dev.kind !== 'graphic') {
-      // Warn if the raw's aspect ratio is far from the device's, or it's tiny —
-      // the chassis stretches the <img> to fit, so a wrong-shape/low-res raw
-      // ships distorted with no error otherwise.
+      // Aspect was checked up front; a tiny raw only looks soft, so warn.
       const sz = pngSize(src);
       rawSz = sz;
       if (sz) {
-        const rawAR = sz.w / sz.h, devAR = dev.w / dev.h;
-        if (Math.abs(rawAR - devAR) / devAR > 0.12) {
-          console.warn(`  ⚠ ${key}: raw is ${sz.w}x${sz.h} (aspect ${rawAR.toFixed(2)}) but ${deviceKey} is ${devAR.toFixed(2)} — it will be stretched. Recapture at the device aspect.`);
-        }
         if (sz.w < dev.w * 0.5) {
           console.warn(`  ⚠ ${key}: raw width ${sz.w}px is low for a ${dev.w}px frame — it may look soft.`);
         }

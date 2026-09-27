@@ -68,7 +68,7 @@ Re-renders a region of the raw as an enlarged panel floating over the device edg
 - `crop: [x, y, w, h]` — region of the **raw**. Values ≤ 1 are fractions of the raw's size, so they survive a different capture resolution; values > 1 are literal pixels. **Prefer fractions.**
 - `width` / `left` / `top` — panel size and position as canvas fractions; negative bleeds off-canvas.
 - `rotate`, `radius` — optional tilt (degrees) and corner radius (fraction of panel width).
-- `popout@<device-key>` — shallow-merges over `popout`. **You will need this**: the same screen laid out on a 1320×2868 iPhone and a 1080×2400 Android puts the target card at different fractions, so one crop cannot serve both. Symptom of a missing override is a panel showing half a card or a slice of the neighbouring one.
+- `popout@<device-key>` — shallow-merges over `popout`. **You will need this**: the same screen laid out on a 1320×2868 iPhone and a 1080×1920 Android puts the target card at different fractions, so one crop cannot serve both. Symptom of a missing override is a panel showing half a card or a slice of the neighbouring one.
 
 Always read the rendered popout back. The crop is blind — nothing validates that it landed on the card you meant.
 
@@ -82,7 +82,9 @@ Always read the rendered popout back. The crop is blind — nothing validates th
 | `android-tablet` | 1600×2560 | Play 10-inch tablet |
 | `feature-graphic` | 1024×500 | Play banner; needs no raw png |
 
-**Play's 2:1 aspect cap is the one that bites.** The long edge may not exceed 2× the short edge, so `1080×2400` (20:9, the natural Android emulator raw) is **rejected at upload**. Framed Android output is `1080×1920`; the 2400-tall raws are capture *inputs* only. The renderer letterboxes them and prints an aspect-mismatch warning per screen — on Android **that warning is expected**, not a defect. Don't "fix" it by re-capturing at 16:9; you'd crop real UI.
+**Play's 2:1 aspect cap is the one that bites.** The long edge may not exceed 2× the short edge, so `1080×2400` (20:9, the natural Android emulator raw) is **rejected at upload**. Framed Android output is `1080×1920`.
+
+**Capture the raw at the frame's aspect, not the device's.** The mockup takes the raw's shape, so a 20:9 raw in the 9:16 frame grows taller, climbs toward the headline and loses its bottom off-canvas, and it sits differently from every other frame in the set. The renderer **refuses** any raw more than 5% off the device aspect, before it renders anything. Recapture: web at `360×640` css @3, emulator on a `pixel_2` AVD (1080×1920). `--allow-aspect-mismatch` (MCP: `allowAspectMismatch`) renders anyway, for a deliberate one-off. Only the aspect has to match, not the pixels: the renderer rescales.
 
 Anything you put in the config's `devices` block **overrides** the built-in, so a stale number there ships silently. Only list a device if you mean to change it.
 
@@ -102,6 +104,7 @@ Anything you put in the config's `devices` block **overrides** the built-in, so 
 - Headline longer than ~4 words or low contrast against the tone.
 - Forgetting `ipad-13` / `android-tablet` when the app supports tablets.
 - **Overriding `android-phone` to 1080×2400** in the project config — rejected at upload.
+- **Tablets captured at the full device width** (1024 css on iPad). The frame shrinks the screen to fit, so the UI text comes out too small to read. Capture at the narrowest width that still gets the tablet layout; see `capturing-store-screenshots-web`.
 - **Framing a raw captured mid-scroll**, so the frame leads with a sliver of a cut-off card. Scroll the device so a *whole* section starts near the top, then re-capture. This is invisible in the raw and obvious in the frame — check the contact sheet.
 - **A `popout` crop pointing at a stale raw.** Re-capture the raw and the crop fractions may now land on a different card. Re-read the frame after any re-capture.
 - Text over the popout's drop shadow — it eats contrast; keep headlines in the top third.

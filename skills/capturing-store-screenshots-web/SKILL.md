@@ -1,16 +1,39 @@
 ---
 name: capturing-store-screenshots-web
 description: >-
-  Use when capturing store screenshots from the Expo WEB bundle in headless Chromium instead of a simulator — fast batches of static screens, no simulator available, or CI. Trigger on "web bundle screenshots", "playwright screenshots", "capture without a simulator", "batch screenshot matrix", "screenshots in CI", "screenshots came out empty / broken / wrong". Keywords: playwright, headless chrome, deviceScaleFactor, seed, dev-login, sql.js, settle, verify, empty state, Hermes, RN-Web.
+  Use when capturing store screenshots from the Expo WEB bundle in headless Chromium instead of a simulator — fast batches of static screens, no simulator available, or CI. Trigger on "web bundle screenshots", "playwright screenshots", "pointclick screenshots", "capture without a simulator", "batch screenshot matrix", "screenshots in CI", "screenshots came out empty / broken / wrong". Keywords: playwright, pointclick, browser MCP, headless chrome, deviceScaleFactor, seed, dev-login, sql.js, settle, verify, empty state, Hermes, RN-Web.
 ---
 
 # Capturing store screenshots from the web bundle
 
 Render the Expo **web** build in headless Chromium at exact store pixel sizes, seed demo data, visit each screen by route, screenshot. No simulator. Best for **static screens and fast full-matrix batches** (all devices × locales). For real-time / gameplay hero screens prefer `capturing-store-screenshots-live`. Frame the output with `framing-store-screenshots`.
 
-## Exact pixel size
+## Pick the driver
 
-CSS viewport × `deviceScaleFactor` = output pixels. e.g. iPhone 6.9" = `440×956` css × `3` = **1320×2868** (Apple's required size). Android phone = `360×800` × `3` = `1080×2400`.
+| | Playwright script (below) | pointclick MCP ([recipe](#pointclick-recipe)) |
+|---|---|---|
+| Use for | the full device × locale matrix, CI, re-runs | a few screens, fixing one that came out wrong, a first trial |
+| You maintain | a script | nothing; the agent drives |
+| Seed strategy B (local-first) | yes | awkward; every step is a separate call |
+
+Both use the same device table, seed strategy and verify checks. Trial one device and
+locale with pointclick, then run the script for the whole matrix.
+
+## Device table
+
+CSS viewport × `deviceScaleFactor` = output pixels. **Size the viewport to the frame, not
+the device.** The framer rescales, so only the raw's aspect has to match the store slot,
+and a narrower viewport makes the UI text bigger.
+
+| Store slot | css | scale | raw | framed |
+|---|---|---|---|---|
+| iPhone 6.9" | `440×956` | 3 | 1320×2868 | 1320×2868 |
+| iPad 13" | `834×1112` | 2 | 1668×2224 | 2064×2752 |
+| Play phone | `360×640` | 3 | 1080×1920 | 1080×1920 |
+| Play 10" tablet | `768×1229` | 1600/768 | 1600×2560 | 1600×2560 |
+
+- **Android phone is 9:16, not 20:9.** Play rejects over 2:1, so the frame is `1080×1920`. A `360×800` capture doesn't fit it, and the framer refuses it.
+- **Tablets: the narrowest width that still gets the tablet layout**, not the device's full width. Find the app's breakpoint (where the tab bar turns into a rail, say) and capture at or just above it. Full-width `1024` css iPad captures come out unreadable once framed.
 
 ## Seed strategy — the key decision
 
@@ -75,6 +98,48 @@ async function assertNoError(page) {
 - Per screen in your config, give an `expect` string (a word only the populated screen shows) and call `assertHero` first, then `assertNoError`.
 - Add a `--verify` pass that re-opens each screen, runs both, and prints a red/green table. Gate the release on it.
 - For any `{id}` detail screen, pick the **richest entity** (most children), not `[0]` — query each candidate's children and take the max, or the detail ships empty.
+
+## pointclick recipe
+
+[pointclick](https://pypi.org/project/pointclick/) is a small browser MCP on Playwright. It
+is not bundled with this kit; add it once per machine:
+
+```bash
+claude mcp add pointclick -- uvx pointclick
+# or from a local clone: claude mcp add pointclick -- uvx --from <path-to-clone> pointclick
+```
+
+Needs a build where `navigate` takes `device` and `screenshot` takes `path` (newer than
+0.1.0). **If `navigate` takes only a url, the server running is older**: update it and
+restart the MCP server.
+
+Per device, then per screen:
+
+```
+navigate("http://localhost:8081/", device="440x956@3 mobile")    # "WxH@scale", from the table
+evaluate("async () => { /* dev-login fetch, then */ sessionStorage.setItem('<key>', tok) }")   # strategy A
+navigate("http://localhost:8081/<route>")                         # same device: context kept
+evaluate(CHECK)                                                   # must return "ok"
+screenshot(path="/abs/raw/iphone-6.9/en/<screen>.png")            # → "<path> 1320x2868 png"
+```
+
+```js
+// CHECK: settle, then the positive gate and the narrow blocklist from Verify above.
+async () => {
+  await new Promise(r => setTimeout(r, 800));
+  const t = document.body.innerText || '';
+  if (!t.includes('<expect>')) return 'missing: <expect>';
+  const m = t.match(/failed to load|something went wrong|please try again|\bundefined\b|\bNaN\b/i);
+  return m ? 'bad-state: ' + m[0] : 'ok';
+}
+```
+
+Then frame the raws as usual.
+
+- **A device change drops sessionStorage.** Scale is fixed per browser context, so a new `device` opens a new context. Cookies, localStorage and IndexedDB carry over; sessionStorage and open tabs don't. Seed tokens *after* switching. Repeating the same device string keeps the context.
+- **Read the size in the screenshot reply** against the table before the next screen.
+- **`mobile` doesn't change the user agent.** It sets touch and honours `<meta viewport>`. That's enough for RN-Web and Expo web, which lay out by width. A site that picks its mobile layout from the user agent still renders desktop; use the script with a device UA.
+- Use absolute `path`s. A relative one resolves against the MCP server's working directory, which need not be the project.
 
 ## Appearance (light/dark)
 

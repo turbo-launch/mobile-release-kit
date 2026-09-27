@@ -50,10 +50,14 @@ server.registerTool(
       device: z
         .enum(['iphone-6.9', 'ipad-13', 'android-phone', 'android-tablet', 'feature-graphic'])
         .describe('Target store size: iphone-6.9 1320x2868, ipad-13 2064x2752, android-phone 1080x1920, android-tablet 1600x2560, feature-graphic 1024x500'),
+      allowAspectMismatch: z
+        .boolean()
+        .default(false)
+        .describe('Render raws whose aspect is >5% off the device instead of failing. Recapturing is almost always the fix.'),
     },
   },
-  ({ configPath, rawDir, outDir, device }) =>
-    node('frame-screenshots.js', [configPath, rawDir, outDir, device])
+  ({ configPath, rawDir, outDir, device, allowAspectMismatch }) =>
+    node('frame-screenshots.js', [configPath, rawDir, outDir, device, ...(allowAspectMismatch ? ['--allow-aspect-mismatch'] : [])])
 );
 
 server.registerTool(

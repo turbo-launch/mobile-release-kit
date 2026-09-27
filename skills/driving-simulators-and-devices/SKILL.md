@@ -121,7 +121,7 @@ Output pixels must match the store slot exactly, and most simulators don't:
 |---|---|---|
 | iPhone 6.9" (App Store requires it) | 1320×2868 | iPhone 16/17 **Pro Max** |
 | iPad 13" (only if `supportsTablet`) | 2064×2752 | iPad Pro 13" |
-| Play phone | 1080×1920 output | any 1080-wide AVD — Play rejects aspect > 2:1, so 1080×2400 raws are inputs only |
+| Play phone | 1080×1920 | a `pixel_2` AVD. Stock AVDs are 1080×2400: Play rejects it (> 2:1) and the framer refuses it |
 
 A plain iPhone 17 is **not** 6.9". Check every capture: `sips -g pixelWidth -g pixelHeight shot.png`.
 

@@ -69,7 +69,7 @@ The plugin ships two scripts. Capture re-applies the clean status bar (it resets
 No `simctl` equivalent — use `adb` plus SystemUI demo mode.
 
 ```bash
-adb exec-out screencap -p > raw/<screen>.png          # 1080x2400 on a stock AVD
+adb exec-out screencap -p > raw/<screen>.png          # 1080x1920 on a pixel_2 AVD; a stock AVD's 1080x2400 won't frame
 
 # clean status bar (once per boot; survives app restarts, unlike the iOS override)
 adb shell settings put global sysui_demo_allowed 1

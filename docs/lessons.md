@@ -406,3 +406,21 @@ Dimension checks, `precheck` and the metadata generator all pass on an unframed 
 Only the comparison against last release catches it.
 
 → `driving-a-release`, `framing-store-screenshots`
+
+## Capture at the frame's aspect and the tablet layout's narrowest width
+
+A release captured Android phones at `360×800` css (20:9) because that is what a phone
+is, then framed them into the `1080×1920` (9:16) canvas that Play's 2:1 cap forces. The
+framer printed one warning per screen, and the kit said that warning was expected. The
+phones came out taller than the frame expected, crowding the headline and set apart from
+the iPhone frames. The same release captured tablets at the full `1024` css iPad width.
+Framed into the store canvas, the UI text was too small to read.
+
+Both came from sizing the capture to the device. The framer rescales anyway, so only the
+raw's *aspect* has to match the frame, and a narrower viewport means bigger text.
+
+**Rule:** size the viewport to the frame. Android phone `360×640` @3. Tablets at the
+narrowest width that still gets the tablet layout: iPad 13" `834×1112` @2, Play 10"
+`768×1229` @`1600/768`. The framer now refuses a raw more than 5% off the frame's aspect.
+
+→ `capturing-store-screenshots-web`, `framing-store-screenshots`
