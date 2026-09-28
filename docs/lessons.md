@@ -457,3 +457,33 @@ build without it. Sync then passes and the profiles regenerate. The extension ta
 needs its own profile, and EAS creates that only in an interactive run.
 
 → `releasing-with-eas`
+
+## An EAS Update reaches most users on the second cold start, not the first
+
+A feature shipped over the air to a live version. On an Android phone it never appeared.
+Every check said it should have: the update was on the branch at the right runtime, and a
+`curl` to the update server with the binary's headers got it back. Installing the real
+store `.aab` on an emulator showed what was happening. The first launch downloaded the
+update behind the running app and kept the old bundle. Only a force-stop and relaunch
+applied it. With `fallbackToCacheTimeout: 0` that is by design. On Android back and home
+never end the process, so "next cold start" can be days away.
+
+The fix was a JS gate that holds the splash and reloads into the update before first
+render. Its first version waited 3 s, and unit tests passed. A release build on a throwaway
+channel showed the check answering in under a second and the full-bundle download taking
+4.2 s. The gate opened on the old bundle. Only the device test caught it.
+
+**Rule:** if you ship updates often, gate first render on the update. Wait ~3 s for the
+check, extend to ~10 s once it has found an update, and reload only after the startup
+procedure ends. Verify it on a release build against a throwaway channel, never on unit
+tests alone.
+
+**Corollary:** gate the providers, not just the splash. Anything that runs before the
+reload runs twice or is lost. A cold-start notification tap consumed before the reload
+is gone.
+
+**Corollary:** "the update is not showing" is a delivery question before it is a code
+question. Ask the server with the binary's own headers, and read the runtime version and
+channel from the artifact, not from a local `android/`/`ios/` that CNG regenerates.
+
+→ `shipping-ota-updates`
