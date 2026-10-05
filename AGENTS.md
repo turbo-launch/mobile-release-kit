@@ -11,6 +11,7 @@ The skills under `skills/` are the source of truth for *how* to do each task. Wh
 ## Capabilities → which skill
 
 - **Frame raw screenshots into store marketing images** → `skills/framing-store-screenshots/SKILL.md`
+- **Creative / storyboard screenshots, wider Play banner, 6.5" set** → `skills/designing-story-screenshots/SKILL.md`
 - **Capture native screenshots from iOS Simulators (live / hero screens)** → `skills/capturing-store-screenshots-live/SKILL.md`
 - **Capture screenshots from the Expo web bundle (fast static batches)** → `skills/capturing-store-screenshots-web/SKILL.md`
 - **Build + submit with EAS** → `skills/releasing-with-eas/SKILL.md`

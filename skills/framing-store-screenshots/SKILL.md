@@ -8,6 +8,8 @@ description: >-
 
 Turn raw `<screen>.png` captures into framed marketing images: branded background gradient + benefit headline + device chassis, rendered at exact store pixel sizes. Config-driven — no per-app code edits.
 
+**Two renderers.** This one is JSON-driven (gradient, chassis, headline). For a storyboard set with lifted UI cards, a connecting line, a character, or a wider Play banner, use `designing-story-screenshots` (`templates/story-frames/`).
+
 Capture the raws first with `capturing-store-screenshots-live` (real/hero screens) or `capturing-store-screenshots-web` (static batches).
 
 ## Render

@@ -144,6 +144,7 @@ You don't invoke these by name — say what you're doing and the right one loads
 | "capture store screenshots" (live/hero screens, macOS) | `capturing-store-screenshots-live` |
 | "capture store screenshots" (fast batches, CI, no simulator) | `capturing-store-screenshots-web` |
 | "make them look like a real listing" | `framing-store-screenshots` |
+| "make the screenshots more creative / a storyboard / a wider Play banner" | `designing-story-screenshots` |
 | "write the store listing / review notes" | `writing-store-listings` |
 | "push the listing to App Store Connect" | `publishing-listings-with-fastlane` |
 | "ship it", "eas build/submit", "upload the build" | `releasing-with-eas` |
@@ -165,6 +166,7 @@ You don't invoke these by name — say what you're doing and the right one loads
 | Type | Name | Does |
 |------|------|------|
 | Skill | `framing-store-screenshots` | Raw screenshots → framed marketing images |
+| Skill | `designing-story-screenshots` | Storyboard frames: lifted UI cards, step line, one layout for every device |
 | Skill | `capturing-store-screenshots-live` | Native iOS Simulator capture (live / multiplayer hero screens) |
 | Skill | `capturing-store-screenshots-web` | Expo web-bundle capture (fast static batches, CI-friendly) |
 | Skill | `releasing-with-eas` | EAS build → submit → review runbook (with the gotchas) |

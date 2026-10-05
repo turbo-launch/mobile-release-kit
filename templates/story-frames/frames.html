@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Story frames</title>
+<style>
+  /* Story frames: ONE layout authored in a 440-wide phone design space (1032 for tablets), scaled to
+     every store size by render.mjs. Light grid ground, a headline with one accent word, numbered step
+     badges joined by a line that runs across frames, a plain phone cropped by the bottom edge, and
+     enlarged "lifted" cards of the real UI. Edit the :root tokens and the FRAMES array; leave the engine. */
+  :root { --ground: #EFEDE7; --ink: #1B1C1A; --sub: #2E312B; --accent: #2EA95A; --accent-soft: rgba(46, 169, 90, .16);
+    --font: -apple-system, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { overflow: hidden; }
+  body { font-family: var(--font); background: var(--ground); --t: 1; }
+  .frame { position: relative; overflow: hidden; transform-origin: 0 0; }
+  body.grid .frame { background-image: linear-gradient(rgba(27, 28, 26, .05) 1px, transparent 1px), linear-gradient(90deg, rgba(27, 28, 26, .05) 1px, transparent 1px);
+    background-size: calc(22px * var(--t)) calc(22px * var(--t)); }
+  h1 { position: absolute; left: calc(24px * var(--t)); right: calc(24px * var(--t)); text-align: center; color: var(--ink); font-weight: 800;
+    font-size: calc(48px * var(--t)); line-height: 1.04; letter-spacing: calc(-1px * var(--t)); white-space: pre; }
+  h1.hero { text-align: left; left: calc(30px * var(--t)); right: auto; font-size: calc(68px * var(--t)); line-height: .98; letter-spacing: calc(-1.8px * var(--t)); }
+  h1 em { font-style: normal; color: var(--accent); }
+  .sub { position: absolute; left: calc(28px * var(--t)); right: calc(28px * var(--t)); text-align: center; color: var(--sub); font-weight: 700;
+    font-size: calc(21px * var(--t)); line-height: 1.28; text-wrap: balance; }
+  .brand { position: absolute; left: calc(30px * var(--t)); top: calc(44px * var(--t)); display: flex; align-items: center; gap: calc(10px * var(--t));
+    font-weight: 800; font-size: calc(24px * var(--t)); color: var(--ink); }
+  .brand img { width: calc(36px * var(--t)); height: calc(36px * var(--t)); border-radius: calc(9px * var(--t)); }
+  .pill { position: absolute; left: calc(30px * var(--t)); padding: calc(9px * var(--t)) calc(16px * var(--t)); border-radius: 999px; background: #fff;
+    border: 1px solid rgba(27, 28, 26, .08); font-weight: 700; font-size: calc(16px * var(--t)); color: var(--ink); box-shadow: 0 2px 6px rgba(20, 40, 25, .06); }
+  .badge { position: absolute; left: 50%; top: calc(42px * var(--t)); width: calc(56px * var(--t)); height: calc(56px * var(--t)); margin-left: calc(-28px * var(--t));
+    border-radius: 50%; background: var(--accent); color: #fff; font-weight: 800; font-size: calc(21px * var(--t)); line-height: calc(56px * var(--t));
+    text-align: center; box-shadow: 0 0 0 calc(7px * var(--t)) var(--accent-soft); z-index: 2; }
+  .line { position: absolute; top: calc(69px * var(--t)); height: calc(3px * var(--t)); background: var(--accent); border-radius: 2px; }
+  .arrow { position: absolute; top: calc(61px * var(--t)); border-top: calc(9.5px * var(--t)) solid transparent; border-bottom: calc(9.5px * var(--t)) solid transparent; border-left: calc(13px * var(--t)) solid var(--accent); }
+  .phone { position: absolute; background: #16181B; box-shadow: 0 2px 4px rgba(0, 0, 0, .18), 0 26px 50px rgba(20, 30, 20, .28); z-index: 1; }
+  .phone .screen { position: absolute; overflow: hidden; background: #FBFAF6; }
+  .phone .raw { position: absolute; left: 0; right: 0; background-repeat: no-repeat; }
+  .card { position: absolute; overflow: hidden; background: #fff; z-index: 2; box-shadow: 0 2px 4px rgba(20, 40, 25, .08), 0 18px 36px rgba(20, 40, 25, .20); }
+  .card.glow { box-shadow: 0 0 0 3px rgba(46, 169, 90, .55), 0 0 0 9px rgba(46, 169, 90, .13), 0 18px 36px rgba(20, 40, 25, .18); }
+  .crop { background-repeat: no-repeat; }
+  .sticker { position: absolute; z-index: 3; filter: drop-shadow(0 10px 16px rgba(20, 50, 20, .22)); }
+</style>
+</head>
+<body>
+<div class="frame" id="frame"></div>
+<script>
+  // ---- EDIT BELOW ---------------------------------------------------------------------------
+  // Raw captures: raw/<lang>/<name>.png (phone) and raw-tablet/<lang>/<name>.png. Same aspect for every raw.
+  const RAW = { phone: (lang, n) => `raw/${lang}/${n}.png`, tab: (lang, n) => `raw-tablet/${lang}/${n}.png` };
+  const RAWW = { phone: 1320, tab: 2064 };            // pixel width of the raws; crops below are in these pixels
+  const BRAND = { name: 'YourApp', icon: 'assets/icon.png' };   // icon: any square PNG; delete the file ref to drop it
+
+  // `step` numbers the loop; the line runs 01 → 02 → … across frames. `*word*` takes the accent colour.
+  // phone: { phone: raw, w, left, top, rotate?, scroll? }   card: { card: raw, crop: [x,y,w,h], w, left, top, rotate?, glow? }
+  // sticker: { img: 'assets/mascot.png', h, left, top }
+  const FRAMES = [
+    { id: 'hero', grid: true, hero: true,
+      head: { en: 'Walk into\nyour exam\n*confident*' }, badge: { en: 'Built on real past papers' },
+      items: [{ phone: 'home', w: 250, left: 196, top: 360, rotate: 8 },
+              { card: 'home', crop: [60, 300, 1200, 300], w: 330, left: 24, top: 600, rotate: -3, glow: true }],
+      tablet: { items: [{ phone: 'home', w: 600, left: 330, top: 520 }] } },
+    { id: 'learn', step: '01', grid: true, head: { en: 'Real questions,\nfrom the *real exam*' }, sub: { en: 'Every past paper, by year' },
+      items: [{ phone: 'learn', w: 292, left: 74, top: 320 }],
+      tablet: { items: [{ phone: 'learn', w: 708, left: 162, top: 470 }] } },
+    { id: 'score', step: '02', last: true, grid: true, head: { en: 'See your\n*score* at once' }, sub: { en: 'Right when you finish' },
+      items: [{ phone: 'score', w: 292, left: 74, top: 320 }],
+      tablet: { items: [{ phone: 'score', w: 708, left: 162, top: 470 }] } },
+  ];
+  // ---- ENGINE (rarely edited) ---------------------------------------------------------------
+  const [id, lang, hs, ws] = (location.hash || `#${FRAMES[0].id}:en`).slice(1).split(':');
+  const H = Number(hs || 956);
+  const TAB = Number(ws) > 600;
+  const W = TAB ? 1032 : 440;
+  const zoom = TAB ? Number(ws) / W : 1;           // tablet: author in 1032, scale up to the canvas
+  const DH = H / zoom;
+  const T = TAB ? 1.6 : 1;                          // header scale: tablet type must grow, the phone design space is tiny there
+  const squeeze = TAB ? 1 : (H - 300) / (956 - 300);   // shorter canvases (Android 2:1) compress everything below the header
+  const Y = (top) => (top <= 300 ? top : 300 + (top - 300) * squeeze);
+  document.documentElement.style.width = document.body.style.width = `${TAB ? ws : 440}px`;
+  document.documentElement.style.height = document.body.style.height = `${H}px`;
+  document.documentElement.lang = lang;
+  const f = FRAMES.find((x) => x.id === id);
+  const items = TAB ? (f.tablet?.items ?? f.items) : f.items;
+  if (f.grid) document.body.classList.add('grid');
+  if (TAB) document.body.style.setProperty('--t', T);
+  const root = document.getElementById('frame');
+  Object.assign(root.style, { width: `${W}px`, height: `${DH}px` });
+  if (TAB) root.style.transform = `scale(${zoom})`;
+  const el = (tag, cls, css = {}, html) => { const e = document.createElement(tag); if (cls) e.className = cls; Object.assign(e.style, css); if (html != null) e.innerHTML = html; root.appendChild(e); return e; };
+  const accent = (t) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  const kind = TAB ? 'tab' : 'phone';
+
+  // A plain phone: no notch or island, so it reads as no brand; the bottom edge crops it.
+  function phone(it) {
+    const w = it.w, bez = w * (TAB ? 0.026 : 0.032), r = w * (TAB ? 0.06 : 0.155), sw = w - 2 * bez, top = TAB ? 0 : w * 0.02;
+    const p = el('div', 'phone', { left: `${it.left}px`, top: `${Y(it.top)}px`, width: `${w}px`, borderRadius: `${r}px`,
+      height: `${TAB ? sw * 4 / 3 + 2 * bez : w * 2.25}px`, transform: it.rotate ? `rotate(${it.rotate}deg)` : '' });
+    const scr = document.createElement('div');
+    scr.className = 'screen';
+    Object.assign(scr.style, { left: `${bez}px`, top: `${bez}px`, right: `${bez}px`, bottom: `${bez}px`, borderRadius: `${r - bez}px` });
+    const raw = document.createElement('div');
+    raw.className = 'raw';
+    Object.assign(raw.style, { top: `${top}px`, bottom: 0, backgroundImage: `url(${RAW[kind](lang, it.phone)})`, backgroundSize: `${sw}px auto`,
+      backgroundPosition: `0 ${-(it.scroll || 0) * sw / RAWW[kind]}px` });
+    scr.appendChild(raw);
+    p.appendChild(scr);
+  }
+
+  // A lifted card: a region of the raw re-drawn at `w`, so the key UI reads at thumbnail size.
+  function card(it) {
+    const [x, y, cw, ch] = it.crop, s = it.w / cw;
+    const c = el('div', `card${it.glow ? ' glow' : ''}`, { left: `${it.left}px`, top: `${Y(it.top)}px`, width: `${it.w}px`, height: `${ch * s}px`,
+      borderRadius: `${it.radius ?? 22}px`, transform: it.rotate ? `rotate(${it.rotate}deg)` : '' });
+    const d = document.createElement('div');
+    d.className = 'crop';
+    Object.assign(d.style, { width: '100%', height: '100%', backgroundImage: `url(${RAW[kind](lang, it.card)})`,
+      backgroundSize: `${RAWW[kind] * s}px auto`, backgroundPosition: `${-x * s}px ${-y * s}px` });
+    c.appendChild(d);
+  }
+
+  let h, pill, sub;
+  if (f.hero) {
+    el('div', 'brand', {}, `${BRAND.icon ? `<img src="${BRAND.icon}">` : ''}${BRAND.name}`);
+    h = el('h1', 'hero', { top: `${108 * T}px` }, accent(f.head[lang]));
+    if (f.badge) pill = el('div', 'pill', {}, `✓ ${f.badge[lang]}`);
+  } else {
+    if (f.step) {
+      const list = FRAMES.filter((x) => x.step), first = list[0] === f;
+      el('div', 'badge', {}, f.step);
+      if (!first) { el('div', 'line', { left: '0px', width: `${W / 2 - 44 * T}px` }); el('div', 'arrow', { left: `${W / 2 - 48 * T}px` }); }
+      if (!f.last) el('div', 'line', { left: `${W / 2 + 32 * T}px`, right: '0px' });
+    }
+    h = el('h1', '', { top: `${124 * T}px` }, accent(f.head[lang]));
+    if (f.sub) sub = el('div', 'sub', {}, f.sub[lang]);
+  }
+  for (const it of items) {
+    if (it.phone) phone(it);
+    else if (it.card) card(it);
+    else if (it.img) el('img', 'sticker', { left: `${it.left}px`, top: `${Y(it.top)}px`, height: `${it.h}px` }).src = it.img;
+  }
+
+  // Decode every image first: a headless screenshot can fire before a large background paints.
+  const urls = [...new Set(items.filter((it) => it.phone || it.card).map((it) => RAW[kind](lang, it.phone || it.card))), BRAND.icon].filter(Boolean);
+  Promise.all([document.fonts.ready, ...urls.map((u) => { const i = new Image(); i.src = u; return i.decode().catch(() => {}); })]).then(() => {
+    // Shrink a long headline to fit its line, then push everything below a taller one down.
+    const max = (f.hero ? W - 60 * T : W - 48 * T);
+    let size = parseFloat(getComputedStyle(h).fontSize);
+    while (h.scrollWidth > max && size > 34 * T) { size -= 1; h.style.fontSize = `${size}px`; }
+    if (sub) sub.style.top = `${h.offsetTop + h.offsetHeight + 12 * T}px`;
+    if (pill) pill.style.top = `${h.offsetTop + h.offsetHeight + 20 * T}px`;
+    const head = pill ?? (TAB ? sub ?? h : null);
+    if (head) {
+      const below = [...root.querySelectorAll('.phone, .card, .sticker')];
+      const shift = head.offsetTop + head.offsetHeight + 28 * T - Math.min(...below.map((e) => e.offsetTop));
+      if (shift > 0) for (const e of below) e.style.top = `${e.offsetTop + shift}px`;
+    }
+    document.body.dataset.ready = '1';
+  });
+</script>
+</body>
+</html>

@@ -6,6 +6,7 @@ All notable changes to this project are documented here. Format loosely follows
 ## [Unreleased]
 
 ### Added
+- `designing-story-screenshots` skill + `templates/story-frames/` (`frames.html`, dependency-free `render.mjs`): author each store frame as HTML in one design space scaled to every device — grid ground, accent-word headline, a step line across frames, plain cropped phone, lifted UI cards, optional character, a landscape Play first screenshot, the iPhone 6.5" slot.
 - `docs/lessons.md` + `releasing-with-eas`: Play's API reports `completed` at 100% while the Console still says "Not yet sent for review" and the public page serves the old build — how to tell, and the `changesNotSentForReview=false` commit that sent it.
 - `docs/lessons.md` + `passing-app-review`: re-submitting subscriptions after a withdraw — `subscriptionSubmissions` refuses `DEVELOPER_REJECTED` versions; attach `subscriptionVersion` / `subscriptionGroupVersion` as review items.
 - Cross-agent support: canonical `AGENTS.md` with `CLAUDE.md`/`GEMINI.md` pointers, and per-agent plugin manifests (`.codex-plugin`, `.cursor-plugin`, `.kimi-plugin`, `.opencode`, `.pi`, `gemini-extension.json`) that all reuse the one `skills/` directory.
