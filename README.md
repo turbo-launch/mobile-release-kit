@@ -241,7 +241,7 @@ Pin a tag rather than tracking the default branch, so a change here can't silent
 ```text
 mobile-release-kit/
 ├── AGENTS.md            # canonical agent instructions (CLAUDE.md/GEMINI.md point here)
-├── skills/              # the sixteen skills (shared by every agent)
+├── skills/              # the seventeen skills (shared by every agent)
 ├── commands/            # /frame-screenshots, /release  (Claude/Codex/Cursor)
 ├── agents/              # release-orchestrator
 ├── hooks/               # build-artifact safety guard
