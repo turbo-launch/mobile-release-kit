@@ -256,6 +256,8 @@ Uploads the `.aab` to the **Internal** track (prompts for a Google service-accou
 
 > **First-ever release gate:** a brand-new app (especially on an individual/personal Play account) often **cannot promote straight to Production** — Google may require a **closed-testing track with ~12 testers for ~14 days** plus identity/account verification before Production unlocks. If "Production" is greyed out, that's why. Check your app's eligibility in Play Console before relying on the 20%→100% path; for a first release, plan the closed-testing window in.
 
+**`completed` / 100% is not "live".** The API reports what you saved, not what Google published. After a production commit confirm the Console says *in review* or *published* (never *Not yet sent for review*) and that the public listing serves the new version string. If it says not sent, commit an empty edit with `:commit?changesNotSentForReview=false`. See `docs/lessons.md` → "Play's `completed` at 100% is not live".
+
 ## OTA vs. binary release (EAS Update)
 
 Not every change needs a new build. **JS/asset-only** changes can ship over-the-air with `eas update --channel production` (the production profile's `channel` is what `eas update` targets). **You must rebuild + resubmit** for: native deps, app version bumps, config-plugin or `app.config` changes, or anything touching native code. OTA only reaches builds whose `runtimeVersion` matches the update — mismatch and the update is silently not delivered. Keep a `runtimeVersion` policy (e.g. `appVersion`) so a binary release and its OTA updates stay coupled.

@@ -82,6 +82,11 @@ Recovery is expensive, so get it right the first time: removing a version from r
 /v1/reviewSubmissionItems` as the only way to attach it — and you go to the back of a queue
 that can be two weeks long.
 
+After a withdraw, `POST /v1/subscriptionSubmissions` answers 409 *no pending version for
+submission* for every rejected subscription. Attach each subscription's and group's current
+version to the draft as `reviewSubmissionItems` (`subscriptionVersion` / `subscriptionGroupVersion`)
+instead — `docs/lessons.md` has the payload.
+
 See `selling-subscriptions` for the disclosure the paywall itself must carry.
 
 ## Sign-in

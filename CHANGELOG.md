@@ -6,6 +6,8 @@ All notable changes to this project are documented here. Format loosely follows
 ## [Unreleased]
 
 ### Added
+- `docs/lessons.md` + `releasing-with-eas`: Play's API reports `completed` at 100% while the Console still says "Not yet sent for review" and the public page serves the old build — how to tell, and the `changesNotSentForReview=false` commit that sent it.
+- `docs/lessons.md` + `passing-app-review`: re-submitting subscriptions after a withdraw — `subscriptionSubmissions` refuses `DEVELOPER_REJECTED` versions; attach `subscriptionVersion` / `subscriptionGroupVersion` as review items.
 - Cross-agent support: canonical `AGENTS.md` with `CLAUDE.md`/`GEMINI.md` pointers, and per-agent plugin manifests (`.codex-plugin`, `.cursor-plugin`, `.kimi-plugin`, `.opencode`, `.pi`, `gemini-extension.json`) that all reuse the one `skills/` directory.
 - `mobile-release-kit` MCP server (`scripts/mcp-server.js`) exposing `frame_screenshots` + `contact_sheet` over stdio, with a committable `.mcp.json`.
 - `driving-a-release` skill + `RELEASE-CHECKLIST.md` template: a guided, resumable release that tracks state in a checklist file and a live TODO, stopping at every billed/irreversible step.

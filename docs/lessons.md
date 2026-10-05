@@ -329,6 +329,23 @@ auto-renewable subscription itself, from inside the group.
 read `WAITING_FOR_REVIEW`; if it still reads `READY_TO_SUBMIT` it did not go, and the version
 page looks identical either way.
 
+**Corollary:** after a withdraw, `POST /v1/subscriptionSubmissions` is the wrong door. Pulling
+the submission (`PATCH /v1/reviewSubmissions/<id>` `{"attributes":{"canceled":true}}`, then wait
+for `DEVELOPER_REJECTED`) leaves each subscription's and group's current *version* rejected too,
+and the old endpoint answers 409 *"has no pending version for submission"* for every one of them.
+Attach the versions to the draft as items instead — read them at `GET /v1/subscriptions/<id>/versions`
+and `GET /v1/subscriptionGroups/<id>/versions`, then:
+
+```
+POST /v1/reviewSubmissionItems
+{"data":{"type":"reviewSubmissionItems","relationships":{
+  "reviewSubmission":{"data":{"type":"reviewSubmissions","id":"<draft-id>"}},
+  "subscriptionVersion":{"data":{"type":"subscriptionVersions","id":"<version-id>"}}}}}
+```
+
+`subscriptionGroupVersion` is the same shape for the group. Submitting the draft then moved all
+of them to `WAITING_FOR_REVIEW`. Look the version up with the highest `version`, not `[0]`.
+
 → `passing-app-review`, `selling-subscriptions`
 
 ## `deliver --verify_only` validates a binary, not your listing
@@ -487,3 +504,39 @@ question. Ask the server with the binary's own headers, and read the runtime ver
 channel from the artifact, not from a local `android/`/`ios/` that CNG regenerates.
 
 → `shipping-ota-updates`
+
+## Play's `completed` at 100% is not "live" — check that Google actually has it
+
+A release was promoted to production through the Publisher API: the track read `completed`,
+the listing text, icon and screenshots all read back correctly, and the rollout was called
+"live at 100%". Two days later a phone on the public Play page still showed the old version,
+the old icon and the old screenshots. Nothing errored and no email arrived. The Console's
+app list said **"Update status: Not yet sent for review"** — the changes were saved, never
+submitted, so no review had started, and the clock Google needs had not begun.
+
+The API cannot show this. `tracks.get` returns what you saved, not what Google published, and
+every listing `GET` returns the edit you committed. What worked was an explicit
+`POST /edits/<id>:commit?changesNotSentForReview=false` on a fresh empty edit; the Console
+then read **"Release … in review"**. The documented default for that flag is already `false`,
+so why the earlier commits left the changes unsent was not isolated — treat the symptom as
+real regardless of the cause.
+
+**Rule:** "shipped to Play" means the public page serves it, not that the API accepted it.
+After a production commit, read the Console (Publishing overview / app list: it must say *in
+review* or *published*, never *not yet sent*) and `curl` the public listing for the new
+version string:
+
+```bash
+curl -s -A "Mozilla/5.0" "https://play.google.com/store/apps/details?id=<package>&hl=en" \
+  | grep -oE '"[0-9]+\.[0-9]+\.[0-9]+"' | sort | uniq -c
+```
+
+**Corollary:** a replaced staged rollout shows the old release as *Resume rollout* next to the
+new one *in review*. Leave it — resuming promotes the superseded build.
+
+**Corollary:** the pre-launch report can carry a warning that does not block the release
+(here: code shrinking/obfuscation under Google's 25% threshold, with a months-away deadline).
+Read it, note it for the next build, and do not mistake it for the reason nothing is live.
+
+→ `releasing-with-eas`
+
