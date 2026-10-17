@@ -540,3 +540,11 @@ Release permissions), Apply, **Save changes**, confirm **Yes**. Then prove it th
 within a minute.
 
 → `releasing-with-eas`
+
+## AI-generated app icons come back with rounded corners and a fork outside the crop
+
+**What happened:** asked for a mobile game icon, Gemini drew its own rounded-square mask with white corners outside it, and kept a pitchfork's prongs at the edge. Both stores apply their own mask to a full-bleed square, so a baked-in mask shows as white corners, and Android's adaptive-icon circle clipped the prongs. Asking Gemini to "zoom out" was ignored twice.
+
+**Rule:** ask for a full-bleed square with no rounded corners, border or text, then check it in a circle mask before accepting it. When the subject sits too close to the edge, scale the image to about 82%, centre it, and have the model paint the new border, rather than asking it to zoom out. For Android, ship separate adaptive layers: a cut-out foreground scaled into the central 66% safe zone, a plain background plate, and a white monochrome silhouette. Don't reuse the flat icon as the foreground.
+
+→ `framing-store-screenshots`
