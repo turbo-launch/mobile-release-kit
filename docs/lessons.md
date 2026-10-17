@@ -548,3 +548,11 @@ within a minute.
 **Rule:** ask for a full-bleed square with no rounded corners, border or text, then check it in a circle mask before accepting it. When the subject sits too close to the edge, scale the image to about 82%, centre it, and have the model paint the new border, rather than asking it to zoom out. For Android, ship separate adaptive layers: a cut-out foreground scaled into the central 66% safe zone, a plain background plate, and a white monochrome silhouette. Don't reuse the flat icon as the foreground.
 
 → `framing-store-screenshots`
+
+## A new app's first local iOS build fails non-interactive, and the team may already hold three certificates
+
+**What happened:** `eas build --local --non-interactive` for a new app stopped at "Distribution Certificate is not validated for non-interactive builds", even with the App Store Connect API key in the environment, and each try spent a build number. Running `eas credentials -p ios` by hand then hit Apple's limit of three distribution certificates. None of the three was stored in the app's Expo account, because another app built under a different Expo account (an organization), so "Use an existing one" listed nothing.
+
+**Rule:** before the first iOS build of a new app, have a person run `eas credentials -p ios` → production → All once. Don't retry the non-interactive build. If the team is at three certificates and none is in this Expo account, revoke the oldest: apps already live are unaffected, and the app that used it gets a new certificate on its next build.
+
+→ `releasing-with-eas`
