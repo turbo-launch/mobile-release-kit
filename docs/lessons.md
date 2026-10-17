@@ -526,7 +526,7 @@ listing, prices, tracks) can go through the API or `eas submit`.
 
 → `releasing-with-eas`
 
-## 2026-10-17 · Play "Add app" for a user grants view-only, and only after Save
+## Play "Add app" for a user grants view-only, and only after Save
 
 **What happened:** an existing Play service account got 403 `The caller does not have
 permission` from `eas submit` for a new app in the same developer account. Adding the app
