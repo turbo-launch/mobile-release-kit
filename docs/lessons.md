@@ -525,3 +525,18 @@ listing, prices, tracks) can go through the API or `eas submit`.
 **Add from library** instead of uploading again.
 
 → `releasing-with-eas`
+
+## 2026-10-17 · Play "Add app" for a user grants view-only, and only after Save
+
+**What happened:** an existing Play service account got 403 `The caller does not have
+permission` from `eas submit` for a new app in the same developer account. Adding the app
+under Users and permissions › user › Add app then Apply showed "13" permissions in the row,
+but nothing is stored until **Save changes › Yes**. After saving, the row said **2**: the
+default is view-only. A manual "made it admin" that skipped Save had no effect either.
+
+**Rule:** after Add app, open that app's **Manage permissions**, tick **Admin** (or the two
+Release permissions), Apply, **Save changes**, confirm **Yes**. Then prove it through the API
+(create an edit on the package and expect 200) before running `eas submit`. Access arrived
+within a minute.
+
+→ `releasing-with-eas`
