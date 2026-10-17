@@ -487,3 +487,41 @@ question. Ask the server with the binary's own headers, and read the runtime ver
 channel from the artifact, not from a local `android/`/`ios/` that CNG regenerates.
 
 → `shipping-ota-updates`
+
+## Privacy and support pages belong on a site you already run, one Markdown file per app
+
+A new app's privacy and support URLs were planned as a fresh subdomain with its own
+container, DNS record and deploy. The release stalled on it: both stores require a live
+privacy URL before review, and the host was the one piece nobody could finish unattended.
+Moving the pages under the owner's existing site took a commit and a 30-second deploy.
+
+What it looked like: a release checklist with every box ticked except "privacy page live",
+and a `curl` that returned nothing because the subdomain did not resolve.
+
+**Rule:** give every app a Markdown file in a content collection on a site that already
+deploys (`/app-privacy/<app>`, `/support/<app>`). Adding an app is adding a file. Point the
+store listing and the in-app link at that path before the first build, because the in-app
+link is baked into the binary.
+
+**Corollary:** many static and SPA hosts answer an unknown path with the homepage and a
+200. A status code cannot tell a missing policy from a live one. Verify by grepping the
+live page for a sentence only the policy contains.
+
+→ `writing-store-listings`
+
+## The first Play upload of a new app is a human drag
+
+Google Play refuses API uploads for a package until one bundle has been uploaded through
+the Console, so `eas submit` cannot make the first release. A browser agent cannot finish it
+either: CDP file transfer to a browser that is not on the same machine as the driver is
+capped (Playwright: 50 MB), and a release AAB with game or media assets is usually larger.
+The upload failed with `Cannot transfer files larger than 50Mb`.
+
+**Rule:** for a new Play app, create the app and open Internal testing › Create release,
+then have a person drag the `.aab` onto the drop zone. Everything after that (more bundles,
+listing, prices, tracks) can go through the API or `eas submit`.
+
+**Corollary:** a page reload after the upload loses the draft but not the bundle. Use
+**Add from library** instead of uploading again.
+
+→ `releasing-with-eas`
