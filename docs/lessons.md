@@ -555,4 +555,79 @@ within a minute.
 
 **Rule:** before the first iOS build of a new app, have a person run `eas credentials -p ios` → production → All once. Don't retry the non-interactive build. If the team is at three certificates and none is in this Expo account, revoke the oldest: apps already live are unaffected, and the app that used it gets a new certificate on its next build.
 
+
+## `eas submit` for Android can hang forever in a sandboxed shell, with zero sign of why
+
+**What happened:** `eas submit -p android --path build.aab` sat for 25+ minutes with no
+output, 0% CPU, and no open network connections — not slow, stalled. Killing it and
+checking `lsof` on the PID showed it had no active sockets at all. This was inside an
+agent's sandboxed shell (restricted outbound network); `eas submit` appears to phone home
+to Expo's own servers before or alongside the actual Play upload, and that call never
+returned or never got to run. The same `.aab`, uploaded straight to the Google Play
+Developer API (`androidpublisher/v3`, service-account JWT, no Expo in the loop) with a
+~40-line script, worked on the first try in under a minute.
+
+**Rule:** if `eas submit -p android` produces no output for several minutes, check the
+process for open sockets (`lsof -p <pid> | grep -i tcp`) and CPU time (`ps -o %cpu,time -p
+<pid>`) before assuming it is just slow — near-zero on both means it is stuck, not working.
+Kill it and upload directly: `POST /edits`, `POST .../bundles?uploadType=media` with the
+raw `.aab` bytes, `PUT .../tracks/internal`, `POST .../edits/{id}:commit`. The JWT exchange
+needs only the service-account JSON already required for `eas submit` itself (`iss`,
+`scope: androidpublisher`, signed RS256, exchanged at the key's `token_uri`) — no new
+credential.
+
+**Corollary:** this bypasses `eas submit` entirely for Android, so it is worth keeping as
+the default path in a sandboxed or CI shell rather than a break-glass fallback — it has one
+fewer network hop and one fewer thing that can silently stall. iOS still needs `altool` (or
+`eas submit`) since Apple has no equivalent raw-bytes upload endpoint this simple.
+
+→ `releasing-with-eas`
+
+## A native module that merely links the recorder needs the microphone string, even if your app never calls it
+
+**What happened:** adding an audio *player* (`expo-audio`, no code calling `startRecording`
+anywhere in the app) with no `NSMicrophoneUsageDescription` built, signed and passed the
+artifact gate clean — then stalled or was rejected at App Store processing. The library
+statically links AVAudioSession's record-permission path regardless of whether the app ever
+asks for it, and Apple's binary analysis checks the linked symbols, not the call graph. An
+earlier release of the same app had *removed* this exact string when a different recording
+feature was cut — so its reappearance for an unrelated, playback-only feature looked wrong
+at review time and nearly got reverted.
+
+**Rule:** any native module whose SDK *can* record — an audio/video player built on a
+recording-capable library, a WebRTC component, a barcode/ML-kit camera library — needs its
+platform permission string declared even when your own code path never exercises it. Check
+the module's own `ios/*.podspec` / `AndroidManifest.xml` for what it links, not just what
+your code calls. On Android the asymmetry runs the other way: the manifest merger pulls in
+`RECORD_AUDIO` from the library by default, and it has to be explicitly suppressed
+(`recordAudioAndroid: false` on an Expo config plugin, or `tools:node="remove"` in a raw
+manifest) if the app truly never records.
+
+**Corollary:** write the usage string to say what's actually true (record-capable library,
+playback-only feature) — App Review reads it, and a string that overclaims ("this app
+records your voice") for a feature that never does invites the exact rejection it's meant to
+avoid.
+
+→ `releasing-with-eas`, `passing-app-review`
+
+## Back-to-back local iOS + Android builds can exhaust disk mid-build, and the failure reads as a code problem
+
+**What happened:** an Android local build failed at `mergeReleaseNativeLibs` with "No space
+left on device" — a Gradle task failure that looks like a build config problem, not a
+resource one, unless you read past the first error line. The preceding local iOS build (CocoaPods
+resolution, DerivedData, archive) plus Gradle's own module/build caches had used most of the
+disk; 11 GB free wasn't enough headroom for a native-lib merge step mid-build. Clearing the
+CocoaPods *download* cache (`~/Library/Caches/CocoaPods` — safe, just re-downloads pods on
+the next `pod install`) freed 14 GB and the rebuild passed. Separately, each
+`eas build --local` leaves its working copy in a `$TMPDIR/eas-build-local-nodejs/<uuid>/`
+directory that is not cleaned up after a successful build, and idle Gradle/Kotlin daemons
+from the build (`gradlew` leaves them running by default) keep holding memory afterward.
+
+**Rule:** before a local build session — especially both platforms back to back — check
+`df -h /` has real headroom (treat under ~20 GB free as a reason to clear caches first, not
+to build and see). Read "No space left on device" literally before debugging it as a Gradle
+or dependency problem. After the session: `rm -rf "$TMPDIR"/eas-build-local-nodejs`, and
+`pkill -f GradleDaemon; pkill -f KotlinCompileDaemon` to release the memory they keep
+holding once you're done building.
+
 → `releasing-with-eas`

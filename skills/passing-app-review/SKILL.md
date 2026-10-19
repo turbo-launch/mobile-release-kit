@@ -1,7 +1,7 @@
 ---
 name: passing-app-review
 description: >-
-  Use when preparing an app for App Store / Play review, or after a rejection — the compliance surface that gets apps rejected or removed: account deletion, purchase-surface rules, privacy manifests, tracking permission, export compliance, and demo credentials that actually work. Trigger on "app review", "rejected", "Guideline 2.1 / 2.3.1 / 3.1.1 / 5.1.1", "app got removed", "review notes", "privacy manifest", "data safety", "account deletion", "will this pass review", "compliance check". Trigger before any first submission. Keywords: App Review, rejection, Guideline, account deletion, 5.1.1(v), 2.3.1, 3.1.1, 4.8, PrivacyInfo.xcprivacy, App Tracking Transparency, NSUserTrackingUsageDescription, export compliance, ITSAppUsesNonExemptEncryption, Data safety, demo account, closed testing.
+  Use when preparing an app for App Store / Play review, or after a rejection — the compliance surface that gets apps rejected or removed: account deletion, purchase-surface rules, privacy manifests, tracking permission, export compliance, and demo credentials that actually work. Trigger on "app review", "rejected", "Guideline 2.1 / 2.3.1 / 3.1.1 / 5.1.1", "app got removed", "review notes", "privacy manifest", "data safety", "account deletion", "will this pass review", "compliance check". Also use to run the pre-submission compliance gate (scripts/audit-compliance.mjs) or when a submission was blocked by the compliance hook. Trigger before any first submission. Keywords: App Review, compliance gate, audit, blocked submission, rejection, Guideline, account deletion, 5.1.1(v), 2.3.1, 3.1.1, 4.8, PrivacyInfo.xcprivacy, App Tracking Transparency, NSUserTrackingUsageDescription, export compliance, ITSAppUsesNonExemptEncryption, Data safety, demo account, closed testing.
 ---
 
 # Passing app review
@@ -13,9 +13,28 @@ costs 24–48h each time.
 Run this **before the first submission**, and again whenever auth, purchases, or data
 collection changes.
 
+## Run the gate first
+
+Most of what follows is visible in the repo. Read it out of the project rather than off the
+top of your head:
+
+```bash
+node scripts/audit-compliance.mjs <projectRoot>
+```
+
+Exit `0` = no critical finding, `1` = critical (do not submit), `2` = could not inspect —
+which is **not** a pass. It runs automatically before `eas submit` and `fastlane deliver`
+and blocks on a critical finding; `docs/compliance-checks.md` lists every check and the
+escape hatch.
+
+A green gate is not approval. It reads the repo, so it cannot see App Store Connect, your
+Data safety answers, or whether the demo account works today — the three most common
+rejections of all. Walk the checklist below too.
+
 ## The pre-submission checklist
 
 ```
+- [ ] `audit-compliance.mjs` run, exit 0, remaining findings triaged
 - [ ] In-app account deletion, if the app can create an account
 - [ ] Sign in with Apple offered, if any other social login is
 - [ ] Demo credentials VERIFIED working, today, on a clean install
@@ -116,6 +135,17 @@ out step by step. Reviewers do not explore.
 - Ask for permissions **at the moment of use**, with a usage string that says why. A
   launch-time wall of prompts is both a rejection risk and the reason people decline
   forever.
+- **A native module needs its usage string even if your app code never calls the capability
+  it links.** A playback-only audio library built on a recording-capable SDK still links
+  AVAudioSession's record path; App Store processing checks linked symbols, not your call
+  graph, so a missing `NSMicrophoneUsageDescription` can block it regardless of what your
+  screens actually do. Check the module's own `podspec`/`AndroidManifest.xml` for what it
+  links, not just what you call. Write the string to say what's true ("play back
+  recordings", not "record your voice") — overclaiming invites the rejection it's meant to
+  avoid. The Android asymmetry runs the other way: the manifest merger pulls in permissions
+  like `RECORD_AUDIO` from the library *by default*, and has to be explicitly suppressed
+  (an Expo config-plugin option, or `tools:node="remove"` in a raw manifest) if the app
+  truly never uses it.
 
 ## Export compliance
 
