@@ -555,6 +555,41 @@ within a minute.
 
 **Rule:** before the first iOS build of a new app, have a person run `eas credentials -p ios` → production → All once. Don't retry the non-interactive build. If the team is at three certificates and none is in this Expo account, revoke the oldest: apps already live are unaffected, and the app that used it gets a new certificate on its next build.
 
+→ `releasing-with-eas`
+
+## Play custom store listings: the asset library dedupes by content and orders by click
+
+Seen 2026-10-18 building three URL-targeted custom store listings for Praxis in the
+Play Console UI.
+
+- **"Duplicate an existing listing" copies every slot**, phone and both tablet sizes.
+  Remove the inherited screenshots, or the tutor page keeps the student tablet shots.
+- **Uploads land in a shared asset library that dedupes by bytes.** A file identical to
+  one uploaded earlier (a reused frame) does not appear under its new name; it silently
+  becomes the old asset (`image`, unnamed). Give every file a unique name per listing
+  (`s1-play-03.png`) and, when a frame is shared between listings, change one pixel so
+  the bytes differ.
+- **Upload selects everything in random order.** Click *Deselect all*, then click the
+  assets in the order you want, then *Add*. Order of selection is order on the listing.
+- A second upload attempt while the first is still processing adds both sets (12 of 8,
+  red border). Wait for the names to appear before acting again.
+- **Rollout percentage can only go up after publishing**, and choosing 100% asks for a
+  confirmation that "cannot be easily reversed". Save at 50% and raise later if unsure.
+- The review step's *Save* only queues the change in Publishing overview ("Changes not
+  yet submitted for review"); with Managed publishing off, *Submit for review* there is
+  the step that goes live after approval.
+- **The first upload after opening the asset panel often does nothing.** Upload, wait,
+  search the file names; if they are missing, upload the same files again. A file Play
+  merged with an old one shows "Asset was deduplicated" and keeps the old name.
+- **Find a slot's "Add assets" by its section heading, never by index.** The buttons shift
+  when a section expands; picking by index put tablet frames into the phone slot. Tag the
+  button whose nearest container reads "Phone screenshots" (or "7-inch tablet") and click that.
+- **Removing assets works with a scripted click; selecting them does not.** Remove buttons
+  (`aria-label="Remove <name>"`) accept `element.click()`, so clear a slot in a loop. Asset
+  selection in the panel needs real pointer clicks on `[aria-label="Deselected asset <name>"]`.
+- **"Rollout 50%" shown right after Save is a display glitch** when the saved value is 100%;
+  reload the edit page to read the real value.
+- **Play can target a custom listing by search keyword**, not only by URL, country or ads.
 
 ## `eas submit` for Android can hang forever in a sandboxed shell, with zero sign of why
 
@@ -629,5 +664,19 @@ to build and see). Read "No space left on device" literally before debugging it 
 or dependency problem. After the session: `rm -rf "$TMPDIR"/eas-build-local-nodejs`, and
 `pkill -f GradleDaemon; pkill -f KotlinCompileDaemon` to release the memory they keep
 holding once you're done building.
+
+→ `releasing-with-eas`
+
+## Play "completed" on the production track does not mean the app is public
+
+**What happened:** after sending a first production release for review, the Play Developer API
+reported the production track as `status: completed` for that version code. That read as
+"live", and a marketing page was about to link the Play listing. The public listing URL
+(`https://play.google.com/store/apps/details?id=<package>`) still returned 404: the release was
+committed and waiting for Google's review, and the track status says nothing about review.
+
+**Rule:** treat a release as live only when the public listing URL answers 200 for a signed-out
+request (`curl -s -o /dev/null -w "%{http_code}" -A "Mozilla/5.0" "<listing url>&hl=en"`). Keep
+store badges on "coming soon" until then.
 
 → `releasing-with-eas`
