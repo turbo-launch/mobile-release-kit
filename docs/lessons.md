@@ -680,3 +680,23 @@ request (`curl -s -o /dev/null -w "%{http_code}" -A "Mozilla/5.0" "<listing url>
 store badges on "coming soon" until then.
 
 → `releasing-with-eas`
+
+## `eas submit` can also stall on Expo's side: "Scheduled", then "Submitting" for half an hour
+
+**What happened:** a local Android and iOS build were uploaded to EAS Submit ("Uploaded to EAS
+Submit", "Scheduled ... submission"), then both sat at `- Submitting` for 30+ minutes while
+status.expo.dev showed "Partially Degraded Service". Unlike the sandbox hang above, the CLI was
+fine; the queue was not. The iOS `.ipa` went up directly in 8 seconds. The Android direct upload
+then failed with `Version code 17 has already been used`: the queued EAS submission had landed in
+the meantime, as a draft.
+
+**Rule:** after ~10 minutes at `Submitting`, stop waiting and upload directly.
+- iOS, with the App Store Connect API key `eas.json` already holds (no Apple ID password):
+  copy the `.p8` to a temp dir as `AuthKey_<keyId>.p8`, then
+  `API_PRIVATE_KEYS_DIR=<dir> xcrun altool --upload-app -f build.ipa -t ios --apiKey <keyId> --apiIssuer <issuerId>`.
+- Android: the direct `androidpublisher` upload above. If it answers "version code already used",
+  EAS got there first: skip the upload and just set the track release (`PUT .../tracks/<track>`
+  with that version code and `status: completed`, then commit). A queued EAS Android submit with
+  managed publishing lands as a draft and never reaches testers on its own.
+
+→ `releasing-with-eas`
