@@ -700,3 +700,39 @@ the meantime, as a draft.
   managed publishing lands as a draft and never reaches testers on its own.
 
 → `releasing-with-eas`
+
+## Adding Google sign-in to an app whose push lives in another app's Firebase project shows that app's name
+
+BirƏmlak's FCM sat in the Praxis Google Cloud project. The OAuth consent screen belongs to the
+project, so Google sign-in would have asked users to "sign in to Praxis". The sign-in clients went
+into a project of their own: Android resolves its client by package name + SHA-1 in whatever project
+holds it, and the native SDK's `webClientId` must come from that same project. Push was untouched.
+
+**Rule:** check the consent screen's app name before reusing a project for sign-in. Register an
+Android client per SHA-1 (debug, upload, *and* Play App Signing; the last one is only exposed through
+Play Console's copy button, not the page text).
+
+→ `wiring-social-sign-in`
+
+## Turning on a capability invalidates the profile; a non-interactive local build can fix it with the ASC key
+
+Enabling Sign in with Apple on the App ID made the existing provisioning profile invalid. A local
+`eas build --non-interactive` regenerated it without an Apple ID login once these were exported:
+`EXPO_ASC_API_KEY_PATH`, `EXPO_ASC_KEY_ID`, `EXPO_ASC_ISSUER_ID`, `EXPO_APPLE_TEAM_ID`,
+`EXPO_APPLE_TEAM_TYPE`. Verify the result: `codesign -d --entitlements :-` on the `.app` must list
+`com.apple.developer.applesignin`.
+
+→ `releasing-with-eas`
+
+## Small store-console traps from one release
+
+- Apple Services ID descriptions reject non-ASCII letters ("BirƏmlak" is "Invalid description"); use ASCII.
+- `precheck` flags "Google" in an iOS description or What's New (other platforms, 2.3.10). Keep the
+  Play copy separate when the app offers Google sign-in.
+- Play's Data safety "Delete account URL" check got 403 from every Cloudflare-fronted host, though
+  browsers and curl got 200, and the form will not advance past it. A public GitHub gist with the steps
+  and the data deleted passed at once.
+- A `deliver` piped into `head` dies of SIGPIPE mid-screenshot-upload with `overwrite_screenshots`
+  on: log to a file instead, or the listing can be left without screenshots.
+
+→ `writing-store-listings`, `publishing-listings-with-fastlane`
