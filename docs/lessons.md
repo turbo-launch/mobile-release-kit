@@ -736,3 +736,13 @@ Enabling Sign in with Apple on the App ID made the existing provisioning profile
   on: log to a file instead, or the listing can be left without screenshots.
 
 → `writing-store-listings`, `publishing-listings-with-fastlane`
+
+## `Appearance.setColorScheme` does not exist on react-native-web
+
+An in-app theme switch that calls `Appearance.setColorScheme(...)` at module load crashed the whole
+web bundle on import (`setColorScheme is not a function`) and nothing noticed, because only native
+was ever opened. Web is what screenshot and design-board capture run on. Call it optionally
+(`Appearance.setColorScheme?.(…)`) for the native chrome, and have the theme hook read the stored
+pick itself instead of trusting `useColorScheme`, which web cannot be told.
+
+→ `driving-simulators-and-devices`, `capturing-store-screenshots-web`
