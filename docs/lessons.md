@@ -746,3 +746,34 @@ was ever opened. Web is what screenshot and design-board capture run on. Call it
 pick itself instead of trusting `useColorScheme`, which web cannot be told.
 
 → `driving-simulators-and-devices`, `capturing-store-screenshots-web`
+
+## `CI=1 expo start` serves a frozen bundle
+
+A web dev server started as `CI=1 bunx expo start --web` (to stop it prompting in a background
+shell) never picks up edits: in CI mode Metro turns file watching off. A QA agent fetched the bundle,
+found none of the branch's changes in it, and lost its click-test. Start background servers without
+`CI=1`; they don't prompt without a TTY anyway. If a fresh edit isn't in the bundle, check how the
+server was started before suspecting the code.
+
+→ `driving-simulators-and-devices`, `capturing-store-screenshots-web`
+
+## `eas submit` "service account cannot submit this app"
+
+The Play service account was active in the developer account and already releasing two other apps,
+but app access in Play Console is per app: a new app under the same account isn't covered.
+Users and permissions › the service account › App permissions › Add app › the new app, then Save
+changes. The retry went through at once. Account permissions would cover every app instead.
+
+→ `releasing-with-eas`
+
+## Google sign-in silently "cancels" on a Play install: the SHA-1 was a SHA-256 prefix
+
+On the Play-installed build, the account chooser opened, but picking an account closed it with nothing
+else happening, and no request reached the backend. Credential Manager reports this rejection as a
+cancellation, which the app rightly keeps silent. The Android OAuth client held
+`AD:E1:…:EC:30`, the first 20 bytes of the Play app-signing **SHA-256**, which is the right length
+for a SHA-1 and looks plausible. Play Console no longer renders the fingerprints as text: use the
+"Copy SHA-1 certificate fingerprint" button (or download the certificate and run
+`openssl x509 -inform der -fingerprint -sha1`), and check that the value isn't the start of the SHA-256.
+
+→ `wiring-social-sign-in`
