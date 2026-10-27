@@ -42,6 +42,7 @@ rejections of all. Walk the checklist below too.
 - [ ] Privacy manifest + third-party SDK manifests present
 - [ ] ATT prompt, if anything is tracked across apps
 - [ ] Export compliance answered in the plist, not per-submission
+- [ ] Age rating has no `null` answers — Apple adds questions (`socialMedia`) to rated apps
 - [ ] Play: Data safety form matches what the app actually sends
 - [ ] Play: closed-testing window planned, if this is a first release
 ```

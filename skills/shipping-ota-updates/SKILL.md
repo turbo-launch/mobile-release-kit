@@ -143,6 +143,10 @@ unzip -o u.apks universal.apk && adb install -r universal.apk
 A local `ios/`/`android/` directory under CNG is not evidence — it can show updates disabled
 while the EAS-built artifact has them on. Inspect the artifact.
 
+The reverse also bites: a stale prebuild left from the last version makes local `expo run:*`
+builds carry the old runtime, so they download the old release's OTA over your fix. Prebuild
+`--clean` after a version bump before local QA.
+
 ## Do not OTA past review
 
 Updating in a way that materially changes what was reviewed — adding a purchase surface,

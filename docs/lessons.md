@@ -777,3 +777,31 @@ for a SHA-1 and looks plausible. Play Console no longer renders the fingerprints
 `openssl x509 -inform der -fingerprint -sha1`), and check that the value isn't the start of the SHA-256.
 
 → `wiring-social-sign-in`
+
+## Submit for Review fails 409 on an app that passed review last week: a new age-rating question
+
+`POST /v1/reviewSubmissionItems` came back `409 STATE_ERROR.ENTITY_STATE_INVALID`, "appStoreVersions
+… is not in valid state", on an app whose previous version sailed through. The real cause sits in
+`meta.associatedErrors`: the age-rating declaration was missing `socialMedia`, a question Apple added
+after the app was rated, so it is `null` on every existing app. The declaration hangs off the
+**app info**, not the version, and the declaration itself only allows `UPDATE`: read it with
+`GET /v1/appInfos/{id}/ageRatingDeclaration` (use the `PREPARE_FOR_SUBMISSION` app info) and
+`PATCH /v1/ageRatingDeclarations/{id}`. The retry submitted at once.
+
+**Rule:** before submitting, list the declaration's `null` attributes and answer them; on a 409, read
+`associatedErrors` before anything else.
+
+→ `passing-app-review`
+
+## A local `expo run:*` test build pulls the previous release's OTA
+
+QA builds made with `expo run:android` showed fixes missing that were plainly in the source. The
+`android/` and `ios/` directories were a prebuild left over from the last release, so the binary
+carried the old app version, hence the old runtime, and on launch it fetched and applied that
+runtime's latest production update over the fresh bundle. EAS builds prebuild again from the tracked
+config and were fine; only the local test binaries lied.
+
+**Rule:** re-run `expo prebuild --clean` after a version bump before any local test build, or turn
+updates off in the local build while doing QA.
+
+→ `shipping-ota-updates`, `driving-simulators-and-devices`
