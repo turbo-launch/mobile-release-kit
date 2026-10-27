@@ -540,3 +540,320 @@ Read it, note it for the next build, and do not mistake it for the reason nothin
 
 → `releasing-with-eas`
 
+## Privacy and support pages belong on a site you already run, one Markdown file per app
+
+A new app's privacy and support URLs were planned as a fresh subdomain with its own
+container, DNS record and deploy. The release stalled on it: both stores require a live
+privacy URL before review, and the host was the one piece nobody could finish unattended.
+Moving the pages under the owner's existing site took a commit and a 30-second deploy.
+
+What it looked like: a release checklist with every box ticked except "privacy page live",
+and a `curl` that returned nothing because the subdomain did not resolve.
+
+**Rule:** give every app a Markdown file in a content collection on a site that already
+deploys (`/app-privacy/<app>`, `/support/<app>`). Adding an app is adding a file. Point the
+store listing and the in-app link at that path before the first build, because the in-app
+link is baked into the binary.
+
+**Corollary:** many static and SPA hosts answer an unknown path with the homepage and a
+200. A status code cannot tell a missing policy from a live one. Verify by grepping the
+live page for a sentence only the policy contains.
+
+→ `writing-store-listings`
+
+## The first Play upload of a new app is a human drag
+
+Google Play refuses API uploads for a package until one bundle has been uploaded through
+the Console, so `eas submit` cannot make the first release. A browser agent cannot finish it
+either: CDP file transfer to a browser that is not on the same machine as the driver is
+capped (Playwright: 50 MB), and a release AAB with game or media assets is usually larger.
+The upload failed with `Cannot transfer files larger than 50Mb`.
+
+**Rule:** for a new Play app, create the app and open Internal testing › Create release,
+then have a person drag the `.aab` onto the drop zone. Everything after that (more bundles,
+listing, prices, tracks) can go through the API or `eas submit`.
+
+**Corollary:** a page reload after the upload loses the draft but not the bundle. Use
+**Add from library** instead of uploading again.
+
+→ `releasing-with-eas`
+
+## Play "Add app" for a user grants view-only, and only after Save
+
+**What happened:** an existing Play service account got 403 `The caller does not have
+permission` from `eas submit` for a new app in the same developer account. Adding the app
+under Users and permissions › user › Add app then Apply showed "13" permissions in the row,
+but nothing is stored until **Save changes › Yes**. After saving, the row said **2**: the
+default is view-only. A manual "made it admin" that skipped Save had no effect either.
+
+**Rule:** after Add app, open that app's **Manage permissions**, tick **Admin** (or the two
+Release permissions), Apply, **Save changes**, confirm **Yes**. Then prove it through the API
+(create an edit on the package and expect 200) before running `eas submit`. Access arrived
+within a minute.
+
+→ `releasing-with-eas`
+
+## AI-generated app icons come back with rounded corners and a fork outside the crop
+
+**What happened:** asked for a mobile game icon, Gemini drew its own rounded-square mask with white corners outside it, and kept a pitchfork's prongs at the edge. Both stores apply their own mask to a full-bleed square, so a baked-in mask shows as white corners, and Android's adaptive-icon circle clipped the prongs. Asking Gemini to "zoom out" was ignored twice.
+
+**Rule:** ask for a full-bleed square with no rounded corners, border or text, then check it in a circle mask before accepting it. When the subject sits too close to the edge, scale the image to about 82%, centre it, and have the model paint the new border, rather than asking it to zoom out. For Android, ship separate adaptive layers: a cut-out foreground scaled into the central 66% safe zone, a plain background plate, and a white monochrome silhouette. Don't reuse the flat icon as the foreground.
+
+→ `framing-store-screenshots`
+
+## A new app's first local iOS build fails non-interactive, and the team may already hold three certificates
+
+**What happened:** `eas build --local --non-interactive` for a new app stopped at "Distribution Certificate is not validated for non-interactive builds", even with the App Store Connect API key in the environment, and each try spent a build number. Running `eas credentials -p ios` by hand then hit Apple's limit of three distribution certificates. None of the three was stored in the app's Expo account, because another app built under a different Expo account (an organization), so "Use an existing one" listed nothing.
+
+**Rule:** before the first iOS build of a new app, have a person run `eas credentials -p ios` → production → All once. Don't retry the non-interactive build. If the team is at three certificates and none is in this Expo account, revoke the oldest: apps already live are unaffected, and the app that used it gets a new certificate on its next build.
+
+→ `releasing-with-eas`
+
+## Play custom store listings: the asset library dedupes by content and orders by click
+
+Seen 2026-10-18 building three URL-targeted custom store listings for Praxis in the
+Play Console UI.
+
+- **"Duplicate an existing listing" copies every slot**, phone and both tablet sizes.
+  Remove the inherited screenshots, or the tutor page keeps the student tablet shots.
+- **Uploads land in a shared asset library that dedupes by bytes.** A file identical to
+  one uploaded earlier (a reused frame) does not appear under its new name; it silently
+  becomes the old asset (`image`, unnamed). Give every file a unique name per listing
+  (`s1-play-03.png`) and, when a frame is shared between listings, change one pixel so
+  the bytes differ.
+- **Upload selects everything in random order.** Click *Deselect all*, then click the
+  assets in the order you want, then *Add*. Order of selection is order on the listing.
+- A second upload attempt while the first is still processing adds both sets (12 of 8,
+  red border). Wait for the names to appear before acting again.
+- **Rollout percentage can only go up after publishing**, and choosing 100% asks for a
+  confirmation that "cannot be easily reversed". Save at 50% and raise later if unsure.
+- The review step's *Save* only queues the change in Publishing overview ("Changes not
+  yet submitted for review"); with Managed publishing off, *Submit for review* there is
+  the step that goes live after approval.
+- **The first upload after opening the asset panel often does nothing.** Upload, wait,
+  search the file names; if they are missing, upload the same files again. A file Play
+  merged with an old one shows "Asset was deduplicated" and keeps the old name.
+- **Find a slot's "Add assets" by its section heading, never by index.** The buttons shift
+  when a section expands; picking by index put tablet frames into the phone slot. Tag the
+  button whose nearest container reads "Phone screenshots" (or "7-inch tablet") and click that.
+- **Removing assets works with a scripted click; selecting them does not.** Remove buttons
+  (`aria-label="Remove <name>"`) accept `element.click()`, so clear a slot in a loop. Asset
+  selection in the panel needs real pointer clicks on `[aria-label="Deselected asset <name>"]`.
+- **"Rollout 50%" shown right after Save is a display glitch** when the saved value is 100%;
+  reload the edit page to read the real value.
+- **Play can target a custom listing by search keyword**, not only by URL, country or ads.
+
+## `eas submit` for Android can hang forever in a sandboxed shell, with zero sign of why
+
+**What happened:** `eas submit -p android --path build.aab` sat for 25+ minutes with no
+output, 0% CPU, and no open network connections — not slow, stalled. Killing it and
+checking `lsof` on the PID showed it had no active sockets at all. This was inside an
+agent's sandboxed shell (restricted outbound network); `eas submit` appears to phone home
+to Expo's own servers before or alongside the actual Play upload, and that call never
+returned or never got to run. The same `.aab`, uploaded straight to the Google Play
+Developer API (`androidpublisher/v3`, service-account JWT, no Expo in the loop) with a
+~40-line script, worked on the first try in under a minute.
+
+**Rule:** if `eas submit -p android` produces no output for several minutes, check the
+process for open sockets (`lsof -p <pid> | grep -i tcp`) and CPU time (`ps -o %cpu,time -p
+<pid>`) before assuming it is just slow — near-zero on both means it is stuck, not working.
+Kill it and upload directly: `POST /edits`, `POST .../bundles?uploadType=media` with the
+raw `.aab` bytes, `PUT .../tracks/internal`, `POST .../edits/{id}:commit`. The JWT exchange
+needs only the service-account JSON already required for `eas submit` itself (`iss`,
+`scope: androidpublisher`, signed RS256, exchanged at the key's `token_uri`) — no new
+credential.
+
+**Corollary:** this bypasses `eas submit` entirely for Android, so it is worth keeping as
+the default path in a sandboxed or CI shell rather than a break-glass fallback — it has one
+fewer network hop and one fewer thing that can silently stall. iOS still needs `altool` (or
+`eas submit`) since Apple has no equivalent raw-bytes upload endpoint this simple.
+
+→ `releasing-with-eas`
+
+## A native module that merely links the recorder needs the microphone string, even if your app never calls it
+
+**What happened:** adding an audio *player* (`expo-audio`, no code calling `startRecording`
+anywhere in the app) with no `NSMicrophoneUsageDescription` built, signed and passed the
+artifact gate clean — then stalled or was rejected at App Store processing. The library
+statically links AVAudioSession's record-permission path regardless of whether the app ever
+asks for it, and Apple's binary analysis checks the linked symbols, not the call graph. An
+earlier release of the same app had *removed* this exact string when a different recording
+feature was cut — so its reappearance for an unrelated, playback-only feature looked wrong
+at review time and nearly got reverted.
+
+**Rule:** any native module whose SDK *can* record — an audio/video player built on a
+recording-capable library, a WebRTC component, a barcode/ML-kit camera library — needs its
+platform permission string declared even when your own code path never exercises it. Check
+the module's own `ios/*.podspec` / `AndroidManifest.xml` for what it links, not just what
+your code calls. On Android the asymmetry runs the other way: the manifest merger pulls in
+`RECORD_AUDIO` from the library by default, and it has to be explicitly suppressed
+(`recordAudioAndroid: false` on an Expo config plugin, or `tools:node="remove"` in a raw
+manifest) if the app truly never records.
+
+**Corollary:** write the usage string to say what's actually true (record-capable library,
+playback-only feature) — App Review reads it, and a string that overclaims ("this app
+records your voice") for a feature that never does invites the exact rejection it's meant to
+avoid.
+
+→ `releasing-with-eas`, `passing-app-review`
+
+## Back-to-back local iOS + Android builds can exhaust disk mid-build, and the failure reads as a code problem
+
+**What happened:** an Android local build failed at `mergeReleaseNativeLibs` with "No space
+left on device" — a Gradle task failure that looks like a build config problem, not a
+resource one, unless you read past the first error line. The preceding local iOS build (CocoaPods
+resolution, DerivedData, archive) plus Gradle's own module/build caches had used most of the
+disk; 11 GB free wasn't enough headroom for a native-lib merge step mid-build. Clearing the
+CocoaPods *download* cache (`~/Library/Caches/CocoaPods` — safe, just re-downloads pods on
+the next `pod install`) freed 14 GB and the rebuild passed. Separately, each
+`eas build --local` leaves its working copy in a `$TMPDIR/eas-build-local-nodejs/<uuid>/`
+directory that is not cleaned up after a successful build, and idle Gradle/Kotlin daemons
+from the build (`gradlew` leaves them running by default) keep holding memory afterward.
+
+**Rule:** before a local build session — especially both platforms back to back — check
+`df -h /` has real headroom (treat under ~20 GB free as a reason to clear caches first, not
+to build and see). Read "No space left on device" literally before debugging it as a Gradle
+or dependency problem. After the session: `rm -rf "$TMPDIR"/eas-build-local-nodejs`, and
+`pkill -f GradleDaemon; pkill -f KotlinCompileDaemon` to release the memory they keep
+holding once you're done building.
+
+→ `releasing-with-eas`
+
+## Play "completed" on the production track does not mean the app is public
+
+**What happened:** after sending a first production release for review, the Play Developer API
+reported the production track as `status: completed` for that version code. That read as
+"live", and a marketing page was about to link the Play listing. The public listing URL
+(`https://play.google.com/store/apps/details?id=<package>`) still returned 404: the release was
+committed and waiting for Google's review, and the track status says nothing about review.
+
+**Rule:** treat a release as live only when the public listing URL answers 200 for a signed-out
+request (`curl -s -o /dev/null -w "%{http_code}" -A "Mozilla/5.0" "<listing url>&hl=en"`). Keep
+store badges on "coming soon" until then.
+
+→ `releasing-with-eas`
+
+## `eas submit` can also stall on Expo's side: "Scheduled", then "Submitting" for half an hour
+
+**What happened:** a local Android and iOS build were uploaded to EAS Submit ("Uploaded to EAS
+Submit", "Scheduled ... submission"), then both sat at `- Submitting` for 30+ minutes while
+status.expo.dev showed "Partially Degraded Service". Unlike the sandbox hang above, the CLI was
+fine; the queue was not. The iOS `.ipa` went up directly in 8 seconds. The Android direct upload
+then failed with `Version code 17 has already been used`: the queued EAS submission had landed in
+the meantime, as a draft.
+
+**Rule:** after ~10 minutes at `Submitting`, stop waiting and upload directly.
+- iOS, with the App Store Connect API key `eas.json` already holds (no Apple ID password):
+  copy the `.p8` to a temp dir as `AuthKey_<keyId>.p8`, then
+  `API_PRIVATE_KEYS_DIR=<dir> xcrun altool --upload-app -f build.ipa -t ios --apiKey <keyId> --apiIssuer <issuerId>`.
+- Android: the direct `androidpublisher` upload above. If it answers "version code already used",
+  EAS got there first: skip the upload and just set the track release (`PUT .../tracks/<track>`
+  with that version code and `status: completed`, then commit). A queued EAS Android submit with
+  managed publishing lands as a draft and never reaches testers on its own.
+
+→ `releasing-with-eas`
+
+## Adding Google sign-in to an app whose push lives in another app's Firebase project shows that app's name
+
+BirƏmlak's FCM sat in the Praxis Google Cloud project. The OAuth consent screen belongs to the
+project, so Google sign-in would have asked users to "sign in to Praxis". The sign-in clients went
+into a project of their own: Android resolves its client by package name + SHA-1 in whatever project
+holds it, and the native SDK's `webClientId` must come from that same project. Push was untouched.
+
+**Rule:** check the consent screen's app name before reusing a project for sign-in. Register an
+Android client per SHA-1 (debug, upload, *and* Play App Signing; the last one is only exposed through
+Play Console's copy button, not the page text).
+
+→ `wiring-social-sign-in`
+
+## Turning on a capability invalidates the profile; a non-interactive local build can fix it with the ASC key
+
+Enabling Sign in with Apple on the App ID made the existing provisioning profile invalid. A local
+`eas build --non-interactive` regenerated it without an Apple ID login once these were exported:
+`EXPO_ASC_API_KEY_PATH`, `EXPO_ASC_KEY_ID`, `EXPO_ASC_ISSUER_ID`, `EXPO_APPLE_TEAM_ID`,
+`EXPO_APPLE_TEAM_TYPE`. Verify the result: `codesign -d --entitlements :-` on the `.app` must list
+`com.apple.developer.applesignin`.
+
+→ `releasing-with-eas`
+
+## Small store-console traps from one release
+
+- Apple Services ID descriptions reject non-ASCII letters ("BirƏmlak" is "Invalid description"); use ASCII.
+- `precheck` flags "Google" in an iOS description or What's New (other platforms, 2.3.10). Keep the
+  Play copy separate when the app offers Google sign-in.
+- Play's Data safety "Delete account URL" check got 403 from every Cloudflare-fronted host, though
+  browsers and curl got 200, and the form will not advance past it. A public GitHub gist with the steps
+  and the data deleted passed at once.
+- A `deliver` piped into `head` dies of SIGPIPE mid-screenshot-upload with `overwrite_screenshots`
+  on: log to a file instead, or the listing can be left without screenshots.
+
+→ `writing-store-listings`, `publishing-listings-with-fastlane`
+
+## `Appearance.setColorScheme` does not exist on react-native-web
+
+An in-app theme switch that calls `Appearance.setColorScheme(...)` at module load crashed the whole
+web bundle on import (`setColorScheme is not a function`) and nothing noticed, because only native
+was ever opened. Web is what screenshot and design-board capture run on. Call it optionally
+(`Appearance.setColorScheme?.(…)`) for the native chrome, and have the theme hook read the stored
+pick itself instead of trusting `useColorScheme`, which web cannot be told.
+
+→ `driving-simulators-and-devices`, `capturing-store-screenshots-web`
+
+## `CI=1 expo start` serves a frozen bundle
+
+A web dev server started as `CI=1 bunx expo start --web` (to stop it prompting in a background
+shell) never picks up edits: in CI mode Metro turns file watching off. A QA agent fetched the bundle,
+found none of the branch's changes in it, and lost its click-test. Start background servers without
+`CI=1`; they don't prompt without a TTY anyway. If a fresh edit isn't in the bundle, check how the
+server was started before suspecting the code.
+
+→ `driving-simulators-and-devices`, `capturing-store-screenshots-web`
+
+## `eas submit` "service account cannot submit this app"
+
+The Play service account was active in the developer account and already releasing two other apps,
+but app access in Play Console is per app: a new app under the same account isn't covered.
+Users and permissions › the service account › App permissions › Add app › the new app, then Save
+changes. The retry went through at once. Account permissions would cover every app instead.
+
+→ `releasing-with-eas`
+
+## Google sign-in silently "cancels" on a Play install: the SHA-1 was a SHA-256 prefix
+
+On the Play-installed build, the account chooser opened, but picking an account closed it with nothing
+else happening, and no request reached the backend. Credential Manager reports this rejection as a
+cancellation, which the app rightly keeps silent. The Android OAuth client held
+`AD:E1:…:EC:30`, the first 20 bytes of the Play app-signing **SHA-256**, which is the right length
+for a SHA-1 and looks plausible. Play Console no longer renders the fingerprints as text: use the
+"Copy SHA-1 certificate fingerprint" button (or download the certificate and run
+`openssl x509 -inform der -fingerprint -sha1`), and check that the value isn't the start of the SHA-256.
+
+→ `wiring-social-sign-in`
+
+## Submit for Review fails 409 on an app that passed review last week: a new age-rating question
+
+`POST /v1/reviewSubmissionItems` came back `409 STATE_ERROR.ENTITY_STATE_INVALID`, "appStoreVersions
+… is not in valid state", on an app whose previous version sailed through. The real cause sits in
+`meta.associatedErrors`: the age-rating declaration was missing `socialMedia`, a question Apple added
+after the app was rated, so it is `null` on every existing app. The declaration hangs off the
+**app info**, not the version, and the declaration itself only allows `UPDATE`: read it with
+`GET /v1/appInfos/{id}/ageRatingDeclaration` (use the `PREPARE_FOR_SUBMISSION` app info) and
+`PATCH /v1/ageRatingDeclarations/{id}`. The retry submitted at once.
+
+**Rule:** before submitting, list the declaration's `null` attributes and answer them; on a 409, read
+`associatedErrors` before anything else.
+
+→ `passing-app-review`
+
+## A local `expo run:*` test build pulls the previous release's OTA
+
+QA builds made with `expo run:android` showed fixes missing that were plainly in the source. The
+`android/` and `ios/` directories were a prebuild left over from the last release, so the binary
+carried the old app version, hence the old runtime, and on launch it fetched and applied that
+runtime's latest production update over the fresh bundle. EAS builds prebuild again from the tracked
+config and were fine; only the local test binaries lied.
+
+**Rule:** re-run `expo prebuild --clean` after a version bump before any local test build, or turn
+updates off in the local build while doing QA.
+
+→ `shipping-ota-updates`, `driving-simulators-and-devices`

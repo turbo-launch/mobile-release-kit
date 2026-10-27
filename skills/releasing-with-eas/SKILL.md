@@ -73,6 +73,17 @@ Prints an `.ipa` and an `.aab` URL — **note both build IDs** (`eas build:list 
 
 ## 2b. Build locally
 
+**Check disk headroom first**, especially running both platforms back to back: local iOS
+(CocoaPods resolution, DerivedData, an archive) plus Gradle's own caches can exhaust disk
+mid-build. The failure then reads as a Gradle or dependency problem — "No space left on
+device" surfaces inside a task like `mergeReleaseNativeLibs`, not as a disk error up front.
+Treat under ~20 GB free as a reason to clear caches before building, not after a failure:
+`rm -rf ~/Library/Caches/CocoaPods` is always safe (just re-downloads on the next
+`pod install`). After the session, `eas build --local` leaves its working copy in
+`$TMPDIR/eas-build-local-nodejs/` uncleaned, and `gradlew` leaves Gradle/Kotlin daemons
+running — `rm -rf "$TMPDIR"/eas-build-local-nodejs; pkill -f GradleDaemon; pkill -f
+KotlinCompileDaemon` reclaims both.
+
 Nothing is billed; EAS is still used for signing credentials and, with
 `appVersionSource: remote`, for the build number. Run each platform **interactively the
 first time** — EAS has to create the iOS distribution certificate and the Android upload
@@ -156,6 +167,28 @@ already on your disk.
 
 The listing copy and screenshots travel separately from the binary; see
 `publishing-listings-with-fastlane`.
+
+> **`eas submit -p android` can hang forever with zero signal.** Seen in a sandboxed /
+> restricted-network shell: no output, 0% CPU, no open sockets, 25+ minutes. It appears to
+> reach out to Expo's own servers before or alongside the Play upload, and that call can
+> simply never return. Diagnose before assuming it's slow:
+> `lsof -p <pid> | grep -i tcp` and `ps -o %cpu,time -p <pid>` — near-zero on both means
+> stuck, not working. Kill it and upload straight to the Play Developer API instead, using
+> the same service-account JSON `eas submit` already needs:
+> ```js
+> // JWT: iss = service-account client_email, scope = androidpublisher, signed RS256,
+> // exchanged at the key's token_uri for an access_token — see lib/play.mjs in a project
+> // that already has one, or build this from scratch: ~25 lines.
+> const edit = await api('POST', '/edits');                                   // open edit
+> await fetch(`${UPLOAD}/edits/${edit.id}/bundles?uploadType=media`, {        // upload bytes
+>   method: 'POST', headers: { ...H, 'Content-Type': 'application/octet-stream' },
+>   body: readFileSync(aabPath) });
+> await api('PUT', `/edits/${edit.id}/tracks/internal`,                       // assign track
+>   { track: 'internal', releases: [{ versionCodes: [String(versionCode)], status: 'completed' }] });
+> await api('POST', `/edits/${edit.id}:commit`);                              // publish
+> ```
+> One fewer network hop than `eas submit`, one fewer thing that can silently stall — worth
+> using by default in a sandboxed or CI shell, not just as a break-glass fallback.
 
 ## 3. Gate the artifact — a signed build can be completely inert
 
