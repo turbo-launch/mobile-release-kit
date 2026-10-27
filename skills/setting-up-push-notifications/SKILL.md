@@ -93,8 +93,10 @@ console.log('expo push token', token);
 No token logged means registration failed — go back to the table above; it is a credential
 or a bundling problem, not a server problem. A token but no delivery is the server half.
 
-**Test on a real device.** iOS Simulators cannot receive push notifications at all; an
-Android emulator can only with Play services in the image.
+**Test delivery on a real device.** An iOS Simulator never gets a token from APNs; an
+Android emulator can only with Play services in the image. Tap handling *can* be tested on
+the iOS Simulator: `xcrun simctl push <udid> <bundle-id> payload.apns` shows a banner (put
+your `data` under `"body"`), and tapping it cold-starts the app like a real one.
 
 ## Asking for permission
 
@@ -109,6 +111,42 @@ if (status !== 'granted') await Notifications.requestPermissionsAsync();
 
 Android 13+ requires the runtime `POST_NOTIFICATIONS` permission; `expo-notifications`
 declares it, but you still have to request it.
+
+## Routing a tap
+
+**Navigate only once the navigator exists and auth has resolved.** A tap that launched the
+app is waiting in `getLastNotificationResponseAsync()` before the first render. Pushing a
+route then, while the auth gate is still showing a spinner or redirecting, leaves a bare
+native window: white in light mode, black in dark, no error, no crash.
+
+**Read the launch response once, then clear it.** It persists across launches until
+`clearLastNotificationResponse()` is called, so an uncleared one replays the old tap on
+every later start.
+
+```ts
+const navReady = Boolean(useRootNavigationState()?.key);   // expo-router
+const [pending, setPending] = useState<string | null>(null);
+
+useEffect(() => {
+  const take = (r: Notifications.NotificationResponse | null) => {
+    if (!r) return;
+    Notifications.clearLastNotificationResponse();
+    setPending(routeFor(r.notification.request.content.data));
+  };
+  Notifications.getLastNotificationResponseAsync().then(take);
+  const sub = Notifications.addNotificationResponseReceivedListener(take);
+  return () => sub.remove();
+}, []);
+
+useEffect(() => {
+  if (!pending || authLoading || !navReady) return;
+  setPending(null);
+  if (signedIn) router.push(pending);
+}, [pending, authLoading, navReady, signedIn]);
+```
+
+The same race applies to anything else that navigates at launch, such as a session-expired
+handler in an HTTP interceptor: let the auth gate do the redirect instead.
 
 ## Related
 

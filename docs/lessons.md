@@ -857,3 +857,22 @@ config and were fine; only the local test binaries lied.
 updates off in the local build while doing QA.
 
 → `shipping-ota-updates`, `driving-simulators-and-devices`
+
+## Opening the app from a notification showed a black screen
+
+Users tapping a reminder with the app closed got a black screen that flickered and stayed,
+until they swiped the app away and opened it again. On a light-mode simulator the same thing was
+pure white, not the app's own background colour: a bare native window with nothing mounted.
+The tap handler ran `router.push` from the launch response before the auth gate had mounted the
+navigator, racing the gate's own redirect. The launch response was also never cleared, so it
+replayed on later starts. A session-expired handler that navigated from an HTTP interceptor
+raced in the same way.
+
+**Rule:** hold the tapped route in state and navigate once the navigator exists and auth has
+resolved; clear the launch response as soon as it is read.
+
+**Corollary:** a blank screen is reproducible on the iOS Simulator with `xcrun simctl push` and
+a banner tap. Compare the pixel colour against the app's background to tell "nothing mounted"
+from "a screen rendered empty".
+
+→ `setting-up-push-notifications`
