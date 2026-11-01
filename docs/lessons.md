@@ -876,3 +876,25 @@ a banner tap. Compare the pixel colour against the app's background to tell "not
 from "a screen rendered empty".
 
 → `setting-up-push-notifications`
+
+## Swapping a newer build in after the first version was approved
+
+A game's first version was approved on both stores and held (iOS "release manually", Play
+managed publishing). Two weeks of fixes had landed since, and launch visibility goes to whatever
+ships first, so the approved build was replaced before release. Three things were not obvious:
+
+- The App Store Connect API cannot withdraw a version in Pending Developer Release. The web page's
+  "cancel this release" link does it (state becomes `DEVELOPER_REJECTED`); after that the build
+  relationship, localizations and a new `reviewSubmissions` submit all work through the API.
+  The marketing version stays the same, so only the build number changes.
+- Creating an `appInfoLocalizations` entry for a new locale makes Apple create the matching
+  `appStoreVersionLocalizations` entry too, so a following POST for it fails with 409
+  `DUPLICATE`. Re-read the version locales after creating app-info locales and PATCH.
+- On Play, the old approved changes stay under "Changes ready to publish" with the old version
+  code in their production release, while the new release sits under "Changes in review".
+  Pressing Publish before the new changes are approved ships the old build.
+
+**Rule:** to swap the first build, cancel the iOS release in the web UI, then attach, localize and
+submit by API; on Play, publish only once the new release has moved to "ready to publish".
+
+→ `releasing-with-eas`, `driving-a-release`
