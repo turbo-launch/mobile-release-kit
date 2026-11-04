@@ -898,3 +898,23 @@ ships first, so the approved build was replaced before release. Three things wer
 submit by API; on Play, publish only once the new release has moved to "ready to publish".
 
 → `releasing-with-eas`, `driving-a-release`
+
+## The first in-app purchase has two console-only gates (2026-11-05, Mill & Pike)
+
+- **Apple:** a first non-consumable cannot be submitted through the API. `POST /v1/inAppPurchaseSubmissions`
+  returns 409 `FIRST_NON_CONSUMABLE_MUST_BE_SUBMITTED_ON_VERSION`, and the version page no longer has an
+  in-app purchase section. Add the version to a draft submission ("Add for Review"), then open the
+  purchase's own page, "Add for Review" > the existing draft, and submit both together. Everything
+  before that works by API: create, localizations, price schedule, availability, review screenshot.
+- **Google Play:** the product cannot exist before the billing build does. Creating a one-time product
+  fails with "Can't create product. To fix, request billing permission." until an AAB whose manifest has
+  `com.android.vending.BILLING` is on any track (internal is enough). The legacy `inappproducts` API
+  answers 403 "Please migrate to the new publishing API"; use `oneTimeProducts` (PATCH with
+  `allowMissing=true&regionsVersion.version=...`, then `purchaseOptions:batchUpdateStates` to activate).
+- Neither needs a phone test to be set up, but App Review buys in sandbox: make the purchase reachable
+  without playing far (a Settings entry), or the review notes must explain a long path.
+
+**Rule:** upload the billing build to Play internal before creating the product; submit Apple's first
+non-consumable from its own console page into the version's draft submission.
+
+→ `selling-subscriptions`, `releasing-with-eas`
