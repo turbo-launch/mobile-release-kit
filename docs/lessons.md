@@ -911,6 +911,10 @@ submit by API; on Play, publish only once the new release has moved to "ready to
   `com.android.vending.BILLING` is on any track (internal is enough). The legacy `inappproducts` API
   answers 403 "Please migrate to the new publishing API"; use `oneTimeProducts` (PATCH with
   `allowMissing=true&regionsVersion.version=...`, then `purchaseOptions:batchUpdateStates` to activate).
+- Swapping builds after that: cancelling a submission while the purchase is still in review sends it
+  back to Ready to Submit, so it must be re-added from its page each time. Once the purchase is
+  **Approved** it stays Approved through "cancel this release" on an approved version, and the
+  resubmission needs only the version (all by API after the cancel). (2026-11-07)
 - Neither needs a phone test to be set up, but App Review buys in sandbox: make the purchase reachable
   without playing far (a Settings entry), or the review notes must explain a long path.
 
