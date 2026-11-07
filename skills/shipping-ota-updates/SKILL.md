@@ -40,6 +40,10 @@ version**. An update built at `1.0.2` lands only on installs running `1.0.2`.
 So the version bump is not free: it splits your installed base into two runtime cohorts, and
 the old one only receives updates you publish at the old version.
 
+**Reaching the old cohort:** publish the same fix a second time with `version` temporarily set
+back to the old value (do not commit it), then restore the file. Guard any native module the old
+binary lacks first: the JS has to run on that build.
+
 ## What can and cannot go over the air
 
 | OTA-able | Needs a rebuild + resubmit |

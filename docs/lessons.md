@@ -922,3 +922,55 @@ submit by API; on Play, publish only once the new release has moved to "ready to
 non-consumable from its own console page into the version's draft submission.
 
 → `selling-subscriptions`, `releasing-with-eas`
+
+## When the Play app list and Publishing overview disagree, the overview decides
+
+A production release (version, new screenshots, a changed Data safety form) sat unpublished for
+a day and a half. The account home's app list badged the app **"Changes not yet sent for
+review"**, the state the lesson above fixes with an empty commit. The app's own **Publishing
+overview** said **"Changes in review"**. It listed all three items, had no "not yet sent"
+section and no Send button, and showed *Managed publishing off*. The release was simply in
+review. A Data safety change that adds personal data (here name, phone number, photos) gets a
+slower, human review.
+
+**Rule:** read the app's Publishing overview, not the account-level badge. Commit the empty
+`changesNotSentForReview=false` edit only when the overview itself shows unsent changes or a
+Send button. With managed publishing off, an approved review publishes by itself.
+
+→ `releasing-with-eas`
+
+## The App Store lookup lags "Ready for Sale" by hours — a store-driven update prompt flips late
+
+An app's in-app update prompt read the latest iOS version from
+`itunes.apple.com/lookup?id=<id>&country=<cc>`, cached for an hour. The version went
+**Ready for Sale** (auto-release after approval). For the next few hours the lookup sometimes
+returned an empty body, then the old version, so the backend kept reporting the previous
+release as latest. It flipped about an hour after the lookup finally served the new version.
+Android has no public lookup at all, so its "latest" came from a server setting someone had to
+change.
+
+**Rule:** after a release goes live, expect the iOS prompt to start hours later. Verify by
+reading the lookup and your own version endpoint, not by assuming. Set Android's latest version
+only once the public Play page serves it (see the Play lessons above). Prompting earlier sends
+people to a store page with nothing new on it. Treat an empty lookup body as "unknown" and
+cache that for minutes, not hours.
+
+**Corollary:** check that a server setting meant to change at release time actually reaches the
+running process. Here the compose file listed env vars one by one and had never listed this one,
+so a value set in the deploy panel would have done nothing.
+
+→ `releasing-with-eas`
+
+## To OTA the previous runtime cohort, publish again with the old version, uncommitted
+
+With `runtimeVersion: { policy: "appVersion" }`, a fix published from the `1.2.0` tree reaches
+only `1.2.0` installs, while most users are still on `1.1.2` until they update. Publishing a
+second time with `version` temporarily set back to `1.1.2` (not committed) delivered the same
+JS to that cohort. Group IDs differ per runtime; both appear under the same channel.
+
+**Rule:** for a fix both cohorts need, publish once per runtime: as-is, then with `version` set
+to the old value, then restore the file. The JS must run on the old binary: guard every native
+module the old build lacks (check with `requireOptionalNativeModule` or a try/catch on import)
+before shipping it there.
+
+→ `shipping-ota-updates`

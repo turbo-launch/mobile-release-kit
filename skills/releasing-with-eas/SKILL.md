@@ -289,7 +289,7 @@ Uploads the `.aab` to the **Internal** track (prompts for a Google service-accou
 
 > **First-ever release gate:** a brand-new app (especially on an individual/personal Play account) often **cannot promote straight to Production** — Google may require a **closed-testing track with ~12 testers for ~14 days** plus identity/account verification before Production unlocks. If "Production" is greyed out, that's why. Check your app's eligibility in Play Console before relying on the 20%→100% path; for a first release, plan the closed-testing window in.
 
-**`completed` / 100% is not "live".** The API reports what you saved, not what Google published. After a production commit confirm the Console says *in review* or *published* (never *Not yet sent for review*) and that the public listing serves the new version string. If it says not sent, commit an empty edit with `:commit?changesNotSentForReview=false`. See `docs/lessons.md` → "Play's `completed` at 100% is not live".
+**`completed` / 100% is not "live".** The API reports what you saved, not what Google published. After a production commit confirm the Console says *in review* or *published* (never *Not yet sent for review*) and that the public listing serves the new version string. Read the app's own **Publishing overview**: the account home's badge can say *not yet sent* while the overview says *Changes in review*, and the overview decides. Only if the overview shows unsent changes, commit an empty edit with `:commit?changesNotSentForReview=false`. See `docs/lessons.md` → "Play's `completed` at 100% is not live" and "When the Play app list and Publishing overview disagree".
 
 ## OTA vs. binary release (EAS Update)
 
@@ -297,7 +297,7 @@ Not every change needs a new build. **JS/asset-only** changes can ship over-the-
 
 ## 6. Post
 
-`git tag v<version> && git push origin v<version>`. Smoke-test the production build on a real device for both platforms. Watch crashes 24h. Bump `version` and create the next release folder.
+`git tag v<version> && git push origin v<version>`. Smoke-test the production build on a real device for both platforms. Watch crashes 24h. Bump `version` and create the next release folder. If the app has a server-driven update prompt, expect iOS's to flip hours after *Ready for Sale* (the App Store lookup lags), and set Android's latest version only once the public Play page serves it; see `docs/lessons.md` → "The App Store lookup lags".
 
 ## Gotchas (these bite every time)
 
