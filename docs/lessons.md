@@ -974,3 +974,37 @@ module the old build lacks (check with `requireOptionalNativeModule` or a try/ca
 before shipping it there.
 
 → `shipping-ota-updates`
+
+## A worktree's `.env.local` rides into the OTA
+
+Praxis, 2026-11-10. An update was about to be published from a release worktree where a QA
+agent had left `apps/mobile/.env.local` with `API_URL` pointing at a local dev port. Expo loads
+`.env.local` in production mode too, ahead of `.env.production`, so the update's embedded config
+would have sent every installed app to `localhost`. Caught by listing `.env*` before publishing.
+
+**Rule:** before `eas update`, `ls -a apps/<app> | grep ^.env` and compare against the tree the
+last good update came from; move any `.env.local` / `.env.*.local` out of the way. Non-interactive
+`eas update` also needs `--environment production`, which adds the EAS env on top of the local files.
+
+→ `shipping-ota-updates`
+
+## altool misreads an EAS local .ipa's bundle ID; upload with explicit IDs
+
+Seen 2026-11-16 (Quitdoom 1.0.0). `xcrun altool --upload-app -f build.ipa -t ios --apiKey … --apiIssuer …` stopped at
+"Cannot determine the Apple ID from Bundle ID 'dev.dashgin.videoly.-zstd'": it read the bundle ID wrong from the
+archive `eas build --local` produced.
+
+**Rule:** upload with `--upload-package` and pass the identity yourself:
+`API_PRIVATE_KEYS_DIR=<dir with AuthKey_<id>.p8> xcrun altool --upload-package build.ipa --type ios --apple-id <ASC app id>
+--bundle-id <bundle> --bundle-version <CFBundleVersion> --bundle-short-version-string <version> --apiKey <id> --apiIssuer <issuer>`.
+`API_PRIVATE_KEYS_DIR` lets altool use the team key where it lives, without copying it to `~/.appstoreconnect`.
+
+→ `releasing-with-eas`
+
+## expo-file-system download progress arrives as BigInt
+
+`File.createDownloadTask(url, file, { onProgress })` reports `bytesWritten` / `totalBytes` as BigInt on iOS (SDK 58),
+although the types say `number`; comparing or dividing them throws "Cannot convert BigInt to number" inside the
+callback, so progress silently never shows while the download itself succeeds. Wrap both in `Number()`.
+
+→ `driving-simulators-and-devices`
