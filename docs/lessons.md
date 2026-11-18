@@ -1008,3 +1008,20 @@ although the types say `number`; comparing or dividing them throws "Cannot conve
 callback, so progress silently never shows while the download itself succeeds. Wrap both in `Number()`.
 
 → `driving-simulators-and-devices`
+
+## A local Android build needs ANDROID_HOME exported
+
+`eas build --local -p android` copies the project to a temp dir where no `local.properties` exists, so Gradle fails with
+"SDK location not found" about 90 s in, after the build number is already incremented. Export
+`ANDROID_HOME=$HOME/Library/Android/sdk` in the build script, not the interactive shell.
+
+→ `releasing-with-eas`
+
+## Fresh installs run the binary's bundle, not your OTAs
+
+A new Play/App Store install launches the bundle baked into the binary; the latest update downloads behind it and only
+applies on the next cold start — which Android users may not do for days. A launch gate that waits a few seconds and
+then reloads helps, but on slow networks it opens on the old code. If OTAs carry an onboarding change, check update
+insights per platform (`eas update:insights <group> --platform android`) and ship a new binary when one platform lags.
+
+→ `shipping-ota-updates`
