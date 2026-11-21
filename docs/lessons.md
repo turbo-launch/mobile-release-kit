@@ -1025,3 +1025,15 @@ then reloads helps, but on slow networks it opens on the old code. If OTAs carry
 insights per platform (`eas update:insights <group> --platform android`) and ship a new binary when one platform lags.
 
 → `shipping-ota-updates`
+
+## A patched Expo module's iOS code never ships (SDK 58 precompiled modules)
+
+Since SDK 58, `expo-build-properties` defaults `ios.usePrecompiledModules` to true, and iOS links Expo's prebuilt
+XCFramework for each module (log line: "Switch ExpoVideo XCFramework for build configuration"). A `patches/` edit to
+that module's Swift compiles nowhere: the build passes, the env gate passes, and the fix is simply absent. A whole
+iOS patch to expo-video sat in this state across several TestFlight builds. Opt the patched module out in
+`package.json`: `"expo": { "autolinking": { "ios": { "buildFromSource": ["expo-video"] } } }` (Android has its own
+`android` key, same shape). Prove it on the artifact: grep a string literal the patch adds (an `NSLog` format) in
+the app binary; a separate `Frameworks/<Module>.framework` holding no such string means the prebuilt copy is back.
+
+→ `releasing-with-eas`
