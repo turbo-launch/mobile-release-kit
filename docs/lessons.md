@@ -1037,3 +1037,64 @@ iOS patch to expo-video sat in this state across several TestFlight builds. Opt 
 the app binary; a separate `Frameworks/<Module>.framework` holding no such string means the prebuilt copy is back.
 
 → `releasing-with-eas`
+
+## An OTA replaces `extra`, and `eas update` reads only `.env`
+
+An update carries its own `expoConfig`, and `Constants.expoConfig.extra` on the device comes from the update, not
+the binary. eas-cli evaluates `app.config.ts` for that manifest with the shell env, the EAS environment and `.env`,
+but not `.env.production`. Praxis keeps its production values in `.env.production`, so three OTAs went out with no
+Turnstile site key and no API URL. The app sent no Turnstile token, the backend refuses tokenless native requests,
+and WhatsApp sign-in failed for every phone on those updates, with no error anywhere but the phone. Load the
+production env in the shell before `eas update` and check the resolved `extra` first
+(`npx expo config --type public --json`). After publishing, read the live manifest
+(`curl https://u.expo.dev/<projectId>` with `expo-runtime-version`, `expo-channel-name`, `expo-platform`,
+`expo-protocol-version: 1`, `accept: multipart/mixed`) and look in `extra.expoClient.extra`.
+
+→ `shipping-ota-updates`
+
+## A new capability invalidates the profiles, and an unauthenticated local build reuses them
+
+Adding a capability to an App ID (App Groups for a widget) marks every provisioning profile that includes it Invalid.
+`eas build --local --non-interactive` without App Store Connect credentials in the environment prints "Skipping
+Provisioning Profile validation on Apple Servers because we aren't authenticated" and ships the stored, now invalid
+profiles; the archive fails at the end with "Provisioning profile … doesn't support the group.… App Group". Pass the
+API key on every local iOS build (`EXPO_ASC_API_KEY_PATH`, `EXPO_ASC_KEY_ID`, `EXPO_ASC_ISSUER_ID`,
+`EXPO_APPLE_TEAM_ID`, `EXPO_APPLE_TEAM_TYPE`): EAS then sees "Provisioning profile … is no longer valid" and
+regenerates it. The API key cannot create the App Group itself ("Failed to patch capabilities APP_GROUPS"); that one
+step is the developer portal, signed in. Each failed attempt still spends a build number.
+
+→ `releasing-with-eas`
+
+## The gate's `--string` misses strings Hermes stores as UTF-16
+
+**2026-11-24, QuitDoom.** `verify-release-artifact.sh --string X` searched the bytecode as single-byte text and
+reported a page-script string as absent, although the app ran it. Hermes keeps any string with a non-ASCII
+character (here a big page script with Arabic and Georgian regexes) in its UTF-16 table, so an ASCII substring of it
+is not in the file as plain bytes. A missing `--string` is only proof when the source string is pure ASCII; for
+others, search the UTF-16LE encoding (`python3 -c "b=open(f,'rb').read(); print(b.count(s.encode('utf-16-le')))"`).
+The gate should search both encodings.
+
+→ `verify-artifact`
+
+## Play Console: replace phone screenshots one file at a time, then finish the listing's Review step (QuitDoom 1.1.1, 2026-11-25)
+
+Uploading several screenshots at once in the listing's asset panel lands them in arbitrary order (03, 01, 02), and
+there is no reliable reorder. Remove the language's old set, then upload one file and wait until it shows in the
+list before the next. Play matches identical images to existing library assets and keeps their old file names, so a
+re-uploaded unchanged frame showing an old name is expected. A language whose screenshots were removed shows the
+default language's set as a fallback until its own first upload lands. "Save as draft" on the listing does not put
+anything in Publishing overview: open the listing's Review step and press Save, then the changes appear next to the
+release and go in one "Send N changes for review".
+
+→ `publishing-listings-with-fastlane` (manual Play path)
+
+## Withdrawing a submitted release to bundle more work (QuitDoom 1.1.1, 2026-11-25)
+
+iOS: cancel the review submission over the API (`PATCH /v1/reviewSubmissions/{id}` with `canceled: true`); the
+version goes to DEVELOPER_REJECTED and stays editable under the same version number, build replaceable. Play: Publishing
+overview → Remove changes puts the release back in "not yet submitted"; a release's bundle can't be swapped from its
+details dialog, so discard the unsent draft and create a new release. Expire superseded TestFlight builds
+(`PATCH /v1/builds/{id}` `expired: true`) when the new build adds native modules: with `runtimeVersion: appVersion`
+an OTA for that version would otherwise reach the old builds and crash on the missing module.
+
+→ `releasing-with-eas`, `shipping-ota-updates`
