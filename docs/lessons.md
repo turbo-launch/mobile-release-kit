@@ -41,6 +41,12 @@ This nearly caused a good build to be thrown away and rebuilt.
 UTF-16 encoding — `scripts/verify-release-artifact.sh` does this automatically via
 `--string`.
 
+**ASCII is not safe either.** Hermes stores a whole literal as UTF-16 when *any* character in
+it is non-ASCII. A page script injected as one big string (a WebView `injectedJavaScript`)
+with a single `«` anywhere in it puts every ASCII identifier in it into UTF-16, so
+`--string resumeUntil` came back absent on a build that had it (QuitDoom iOS 39, 2026-11-24).
+The script now scans UTF-16 whenever the plain search finds nothing.
+
 **Corollary:** plain `grep -c` (no `-a`) returns 0 on binary input whether the string is
 there or not — BSD grep short-circuits. **A check that cannot fail is worse than no check**,
 because it is recorded as a pass.

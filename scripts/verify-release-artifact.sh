@@ -119,20 +119,18 @@ fi
 # Hermes keeps non-ASCII in its string table as UTF-16, so `grep -aF` for 'Sərfəli'
 # returns 0 on a bundle that genuinely contains it — every ASCII string matches and
 # every string with an accented letter does not. That false negative once nearly got a
-# good build thrown away and rebuilt. Only pay the (expensive) hex scan when the needle
-# actually contains non-ASCII and the plain search already came back empty.
+# good build thrown away and rebuilt. An ASCII needle is not safe either: Hermes stores a
+# whole literal as UTF-16 when any character in it is non-ASCII, so 'resumeUntil' inside a
+# page script that also holds a '«' is UTF-16 too. Pay the (expensive) hex scan whenever
+# the plain search came back empty.
 has_string() {
   local needle="$1" file="$2" c u16
   c=$(grep -aFc -- "$needle" "$file" 2>/dev/null); c=${c:-0}
   if [ "$c" -eq 0 ]; then
-    case "$needle" in
-      *[!\ -~]*)
-        u16=$(printf '%s' "$needle" | iconv -f UTF-8 -t UTF-16LE 2>/dev/null | xxd -p | tr -d '\n')
-        if [ -n "$u16" ]; then
-          c=$(xxd -p "$file" | tr -d '\n' | grep -c "$u16" 2>/dev/null); c=${c:-0}
-        fi
-        ;;
-    esac
+    u16=$(printf '%s' "$needle" | iconv -f UTF-8 -t UTF-16LE 2>/dev/null | xxd -p | tr -d '\n')
+    if [ -n "$u16" ]; then
+      c=$(xxd -p "$file" | tr -d '\n' | grep -c "$u16" 2>/dev/null); c=${c:-0}
+    fi
   fi
   printf '%s' "$c"
 }
